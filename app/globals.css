@@ -19,8 +19,32 @@
   }
 }
 
+html,
+body {
+  height: 100%;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+@keyframes pulseGlow {
+  0%,
+  100% {
+    box-shadow: 0 0 5px #8b5cf6, 0 0 10px #8b5cf6;
+  }
+  50% {
+    box-shadow: 0 0 20px #8b5cf6, 0 0 40px #8b5cf6;
+  }
+}
+
+.node-running {
+  animation: pulseGlow 1.5s ease-in-out infinite;
+}
+
+.handle-invalid-flash {
+  background: #ef4444 !important;
+  border-color: #fecaca !important;
 }
