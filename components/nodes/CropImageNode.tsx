@@ -72,9 +72,11 @@ export default function CropImageNode({ id, data }: NodeProps<CropImageNodeData>
   };
 
   return (
-    <div className="min-w-[280px] rounded-lg border border-[#2a2a2a] bg-[#1a1a1a] p-3 text-zinc-100 shadow-sm">
+    <div className="min-w-[280px] rounded-[10px] border border-white/10 bg-[#1e1e1e] p-3 text-zinc-100 shadow-[0_10px_30px_-18px_rgba(0,0,0,0.8)]">
       <div className="mb-2 flex items-center gap-2 text-sm font-medium text-zinc-200">
-        <Crop className="h-4 w-4 text-zinc-300" />
+        <span className="inline-flex size-6 items-center justify-center rounded-md bg-[#a855f7]">
+          <Crop className="h-3.5 w-3.5 text-white" />
+        </span>
         <span>Crop Image</span>
       </div>
 
@@ -107,7 +109,7 @@ export default function CropImageNode({ id, data }: NodeProps<CropImageNodeData>
             className={`w-full rounded-md border px-3 py-2 text-sm focus:outline-none ${
               connectedInputs.xPercent
                 ? "cursor-not-allowed border-zinc-800 bg-zinc-800 text-zinc-500"
-                : "border-zinc-700 bg-zinc-900 text-zinc-100 focus:border-zinc-500"
+                : "border-white/10 bg-[#111] text-zinc-100 focus:border-zinc-500"
             }`}
           />
         </div>
@@ -129,7 +131,7 @@ export default function CropImageNode({ id, data }: NodeProps<CropImageNodeData>
             className={`w-full rounded-md border px-3 py-2 text-sm focus:outline-none ${
               connectedInputs.yPercent
                 ? "cursor-not-allowed border-zinc-800 bg-zinc-800 text-zinc-500"
-                : "border-zinc-700 bg-zinc-900 text-zinc-100 focus:border-zinc-500"
+                : "border-white/10 bg-[#111] text-zinc-100 focus:border-zinc-500"
             }`}
           />
         </div>
@@ -153,7 +155,7 @@ export default function CropImageNode({ id, data }: NodeProps<CropImageNodeData>
             className={`w-full rounded-md border px-3 py-2 text-sm focus:outline-none ${
               connectedInputs.widthPercent
                 ? "cursor-not-allowed border-zinc-800 bg-zinc-800 text-zinc-500"
-                : "border-zinc-700 bg-zinc-900 text-zinc-100 focus:border-zinc-500"
+                : "border-white/10 bg-[#111] text-zinc-100 focus:border-zinc-500"
             }`}
           />
         </div>
@@ -177,7 +179,7 @@ export default function CropImageNode({ id, data }: NodeProps<CropImageNodeData>
             className={`w-full rounded-md border px-3 py-2 text-sm focus:outline-none ${
               connectedInputs.heightPercent
                 ? "cursor-not-allowed border-zinc-800 bg-zinc-800 text-zinc-500"
-                : "border-zinc-700 bg-zinc-900 text-zinc-100 focus:border-zinc-500"
+                : "border-white/10 bg-[#111] text-zinc-100 focus:border-zinc-500"
             }`}
           />
         </div>

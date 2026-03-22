@@ -111,12 +111,14 @@ export default function LLMNode({ id, data }: NodeProps<LLMNodeData>) {
 
   return (
     <div
-      className={`min-w-[280px] rounded-lg border border-[#2a2a2a] bg-[#1a1a1a] p-3 text-zinc-100 shadow-sm ${
+      className={`min-w-[280px] rounded-[10px] border border-white/10 bg-[#1e1e1e] p-3 text-zinc-100 shadow-[0_10px_30px_-18px_rgba(0,0,0,0.8)] ${
         isRunning ? "node-running" : ""
       }`}
     >
       <div className="mb-2 flex items-center gap-2 text-sm font-medium text-zinc-200">
-        <Bot className="h-4 w-4 text-zinc-300" />
+        <span className="inline-flex size-6 items-center justify-center rounded-md bg-[#facc15]">
+          <Bot className="h-3.5 w-3.5 text-black" />
+        </span>
         <span>LLM</span>
       </div>
 
@@ -131,7 +133,7 @@ export default function LLMNode({ id, data }: NodeProps<LLMNodeData>) {
             },
           })
         }
-        className="mb-3 w-full rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 focus:border-zinc-500 focus:outline-none"
+        className="mb-3 w-full rounded-md border border-white/10 bg-[#111] px-3 py-2 text-sm text-zinc-100 focus:border-zinc-500 focus:outline-none"
       >
         {MODELS.map((option) => (
           <option key={option.value} value={option.value}>
@@ -164,7 +166,7 @@ export default function LLMNode({ id, data }: NodeProps<LLMNodeData>) {
             className={`min-h-[64px] w-full resize-y rounded-md border px-3 py-2 text-sm focus:outline-none ${
               disabledByConnection.systemPrompt
                 ? "cursor-not-allowed border-zinc-800 bg-zinc-800 text-zinc-500"
-                : "border-zinc-700 bg-zinc-900 text-zinc-100 focus:border-zinc-500"
+                : "border-white/10 bg-[#111] text-zinc-100 focus:border-zinc-500"
             }`}
           />
         </div>
@@ -192,7 +194,7 @@ export default function LLMNode({ id, data }: NodeProps<LLMNodeData>) {
             className={`min-h-[72px] w-full resize-y rounded-md border px-3 py-2 text-sm focus:outline-none ${
               disabledByConnection.userMessage
                 ? "cursor-not-allowed border-zinc-800 bg-zinc-800 text-zinc-500"
-                : "border-zinc-700 bg-zinc-900 text-zinc-100 focus:border-zinc-500"
+                : "border-white/10 bg-[#111] text-zinc-100 focus:border-zinc-500"
             }`}
           />
         </div>
@@ -226,16 +228,16 @@ export default function LLMNode({ id, data }: NodeProps<LLMNodeData>) {
         type="button"
         onClick={runNode}
         disabled={isRunning}
-        className="mt-3 inline-flex items-center gap-2 rounded-md border border-purple-500 bg-purple-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-purple-500 disabled:cursor-not-allowed disabled:opacity-70"
+        className="mt-3 inline-flex items-center gap-2 rounded-md border border-white/10 bg-[#171717] px-3 py-1.5 text-sm font-medium text-zinc-100 hover:bg-[#222] disabled:cursor-not-allowed disabled:opacity-70"
       >
         {isRunning ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
         Run Node
       </button>
 
       {isComplete && inlineResult ? (
-        <div className="mt-3 rounded-md border border-zinc-700 bg-zinc-950/90 p-2">
+        <div className="mt-3 rounded-md border border-white/10 bg-[#111] p-2">
           <p className="mb-1 text-[10px] uppercase tracking-wide text-zinc-500">Result</p>
-          <div className="max-h-28 overflow-y-auto rounded border border-zinc-800 bg-zinc-900 p-2 text-xs leading-relaxed text-zinc-200">
+          <div className="max-h-28 overflow-y-auto rounded border border-white/10 bg-[#161616] p-2 text-xs leading-relaxed text-zinc-200">
             {inlineResult}
           </div>
         </div>

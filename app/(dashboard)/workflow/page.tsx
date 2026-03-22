@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { ChangeEvent, DragEvent } from "react";
 import {
   addEdge,
@@ -8,7 +8,6 @@ import {
   applyNodeChanges,
   Background,
   BackgroundVariant,
-  Controls,
   MiniMap,
   ReactFlow,
   ReactFlowProvider,
@@ -19,15 +18,30 @@ import {
   type ReactFlowInstance,
 } from "reactflow";
 import {
+  Check,
+  Circle,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Crop,
+  Download,
   FileImage,
   FileVideo,
+  Hand,
+  History,
+  Keyboard,
+  Moon,
   MessageSquareText,
+  Plus,
+  Save,
+  Scissors,
+  Send,
   Sparkles,
+  Sun,
   Type,
+  Upload,
 } from "lucide-react";
+import { UserButton, useUser } from "@clerk/nextjs";
 
 import { useWorkflowStore } from "@/lib/store";
 import TextNode from "@/components/nodes/TextNode";
@@ -44,6 +58,7 @@ type NodePaletteItem = {
   type: string;
   label: string;
   icon: typeof Type;
+  iconBgClass: string;
 };
 
 type WorkflowNodeType =
@@ -308,12 +323,12 @@ function isConnectionValid(connection: Connection, nodes: Node[]) {
 }
 
 const NODE_PALETTE: NodePaletteItem[] = [
-  { type: "text", label: "Text", icon: Type },
-  { type: "uploadImage", label: "Upload Image", icon: FileImage },
-  { type: "uploadVideo", label: "Upload Video", icon: FileVideo },
-  { type: "llm", label: "LLM", icon: Sparkles },
-  { type: "cropImage", label: "Crop Image", icon: Crop },
-  { type: "extractFrame", label: "Extract Frame", icon: MessageSquareText },
+  { type: "text", label: "Text", icon: Type, iconBgClass: "bg-[#1e293b]" },
+  { type: "uploadImage", label: "Upload Image", icon: FileImage, iconBgClass: "bg-[#0ea5e9]" },
+  { type: "uploadVideo", label: "Upload Video", icon: FileVideo, iconBgClass: "bg-[#f97316]" },
+  { type: "llm", label: "LLM", icon: Sparkles, iconBgClass: "bg-[#facc15]" },
+  { type: "cropImage", label: "Crop Image", icon: Crop, iconBgClass: "bg-[#a855f7]" },
+  { type: "extractFrame", label: "Extract Frame", icon: MessageSquareText, iconBgClass: "bg-[#d97706]" },
 ];
 
 const nodeTypes = {
@@ -330,17 +345,22 @@ function WorkflowPageContent() {
   const [reactFlowInstance, setReactFlowInstance] =
     useState<ReactFlowInstance<Node, Edge> | null>(null);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const [workflowName, setWorkflowName] = useState("Untitled Workflow");
-  const [isEditingWorkflowName, setIsEditingWorkflowName] = useState(false);
+  const [workflowName, setWorkflowName] = useState("Untitled");
   const [workflowId, setWorkflowId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [historyLoading, setHistoryLoading] = useState(false);
-  const [search, setSearch] = useState("");
+  const [isHistoryOpen, setIsHistoryOpen] = useState(true);
+  const [isThemeDark, setIsThemeDark] = useState(true);
+  const [isWorkflowMenuOpen, setIsWorkflowMenuOpen] = useState(false);
+  const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
+  const [isDrawSelectionMode, setIsDrawSelectionMode] = useState(false);
+  const [isPanMode, setIsPanMode] = useState(true);
   const [contextMenu, setContextMenu] = useState<{
     nodeId: string;
     x: number;
     y: number;
   } | null>(null);
+  const { user } = useUser();
   const selectedNodesRef = useRef<string[]>([]);
   const importFileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -458,7 +478,6 @@ function WorkflowPageContent() {
         return;
       }
 
-      const bounds = wrapperRef.current.getBoundingClientRect();
       const position = reactFlowInstance.screenToFlowPosition({
         x: event.clientX,
         y: event.clientY,
@@ -510,7 +529,7 @@ function WorkflowPageContent() {
         },
         body: JSON.stringify({
           id: workflowId ?? undefined,
-          name: nameOverride ?? workflowName ?? "Untitled Workflow",
+          name: nameOverride ?? workflowName ?? "Untitled",
           nodes,
           edges,
         }),
@@ -539,6 +558,20 @@ function WorkflowPageContent() {
       removeNode(nodeId);
     }
   }, [removeNode]);
+
+  const cutSelectedConnections = useCallback(() => {
+    const selectedSet = new Set(selectedNodesRef.current);
+    if (selectedSet.size === 0) {
+      return;
+    }
+
+    setEdges(
+      edges.filter(
+        (edge) =>
+          !selectedSet.has(edge.source) && !selectedSet.has(edge.target)
+      )
+    );
+  }, [edges, setEdges]);
 
   const loadSampleWorkflow = useCallback(() => {
     const sample = buildSampleWorkflow();
@@ -816,29 +849,65 @@ function WorkflowPageContent() {
 
   const sidebarWidthClass = isSidebarCollapsed ? "w-16" : "w-[240px]";
 
-  const filteredPalette = useMemo(
-    () =>
-      NODE_PALETTE.filter((item) =>
-        item.label.toLowerCase().includes(search.trim().toLowerCase())
-      ),
-    [search]
-  );
+  const filteredPalette = NODE_PALETTE;
+
+  const displayName =
+    user?.fullName ||
+    user?.username ||
+    user?.primaryEmailAddress?.emailAddress ||
+    "User";
+
+  const shortName =
+    displayName.length > 18 ? `${displayName.slice(0, 18)}...` : displayName;
+
+  const rootThemeClass = isThemeDark
+    ? "bg-black text-zinc-100"
+    : "bg-[#eef1f5] text-zinc-900";
+
+  const sidebarThemeClass = isThemeDark
+    ? "border-white/5 bg-black"
+    : "border-black/10 bg-[#e9edf3]";
+
+  const canvasThemeClass = isThemeDark ? "bg-[#121212]" : "bg-[#f5f7fa]";
+
+  const rightPanelThemeClass = isThemeDark
+    ? "border-white/5 bg-black"
+    : "border-black/10 bg-[#edf1f6]";
+
+  const canvasBackground = isThemeDark
+    ? "radial-gradient(120px 120px at 50% 50%, rgba(73,72,71,0.16), rgba(73,72,71,0) 45%), linear-gradient(90deg, #121212 0%, #121212 100%)"
+    : "radial-gradient(120px 120px at 50% 50%, rgba(72,83,101,0.14), rgba(72,83,101,0) 45%), linear-gradient(90deg, #f5f7fa 0%, #f5f7fa 100%)";
+
+  const shortcutsRows: Array<{ action: string; key: string }> = [
+    { action: "Undo", key: "Cmd/Ctrl + Z" },
+    { action: "Redo", key: "Cmd/Ctrl + Shift + Z" },
+    { action: "Save", key: "Cmd/Ctrl + S" },
+    { action: "Select all", key: "Cmd/Ctrl + A" },
+    { action: "Deselect all", key: "Esc" },
+    { action: "New node", key: "N" },
+    { action: "Delete selected", key: "Backspace / Delete" },
+    { action: "Run selected", key: "Bottom action bar" },
+  ];
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-[#0a0a0a] text-zinc-100">
+    <div className={`flex h-screen w-full overflow-hidden ${rootThemeClass}`} style={{ fontFamily: "Manrope, Inter, Arial, sans-serif" }}>
       <aside
-        className={`${sidebarWidthClass} flex h-full shrink-0 flex-col border-r border-zinc-800 bg-[#111] transition-all duration-200`}
+        className={`${sidebarWidthClass} flex h-full shrink-0 flex-col border-r transition-[width] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${sidebarThemeClass}`}
       >
-        <div className="flex items-center justify-between p-3">
+        <div className={`flex items-center justify-between border-b p-3 ${isThemeDark ? "border-white/5" : "border-black/10"}`}>
           {!isSidebarCollapsed ? (
-            <span className="text-sm font-semibold text-zinc-200">Nodes</span>
+            <span className="w-0" />
           ) : (
             <span className="w-0" />
           )}
           <button
             type="button"
             onClick={() => setIsSidebarCollapsed((prev) => !prev)}
-            className="rounded-md border border-zinc-700 bg-zinc-900 p-1.5 text-zinc-300 hover:bg-zinc-800"
+            className={`rounded-md border p-1.5 transition-colors ${
+              isThemeDark
+                ? "border-white/10 bg-[#1a1a1a] text-zinc-300 hover:bg-[#242424]"
+                : "border-black/10 bg-white text-zinc-700 shadow-[0_6px_18px_rgba(15,23,42,0.08)] hover:bg-[#f8fafc]"
+            }`}
           >
             {isSidebarCollapsed ? (
               <ChevronRight className="h-4 w-4" />
@@ -850,18 +919,12 @@ function WorkflowPageContent() {
 
         {!isSidebarCollapsed ? (
           <>
-            <div className="px-3 pb-3">
-              <input
-                type="text"
-                placeholder="Search nodes"
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                className="w-full rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-zinc-500 focus:outline-none"
-              />
-            </div>
-
-            <div className="px-3 pb-3">
-              <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-400">
+            <div className="px-3 pb-3 pt-3">
+              <h2
+                className={`mb-2 px-3 text-[11px] font-semibold uppercase tracking-[0.14em] ${
+                  isThemeDark ? "text-zinc-500" : "text-zinc-600"
+                }`}
+              >
                 Quick Access
               </h2>
               <div className="space-y-2">
@@ -875,138 +938,303 @@ function WorkflowPageContent() {
                       draggable
                       onDragStart={(event) => onDragStart(event, item.type)}
                       onClick={() => addNodeToCanvasCenter(item.type)}
-                      className="flex w-full cursor-grab items-center gap-2 rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-left text-sm text-zinc-100 hover:bg-zinc-800 active:cursor-grabbing"
+                      className={`flex w-full cursor-grab items-center gap-2 rounded-md border border-transparent bg-transparent px-3 py-2 text-left text-sm active:cursor-grabbing ${
+                        isThemeDark
+                          ? "text-zinc-100 hover:bg-white/5"
+                          : "text-zinc-700 hover:bg-black/5"
+                      }`}
                     >
-                      <Icon className="h-4 w-4 text-zinc-300" />
+                      <span className={`inline-flex size-7 items-center justify-center rounded-md ${item.iconBgClass}`}>
+                        <Icon className="h-4 w-4 text-white" />
+                      </span>
                       <span>{item.label}</span>
                     </button>
                   );
                 })}
               </div>
             </div>
+
+            <div
+              className={`mt-auto border-t p-4 ${
+                isThemeDark ? "border-white/5" : "border-black/10"
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <div className="rounded-lg">
+                  <UserButton
+                    appearance={{
+                      elements: {
+                        avatarBox: "h-10 w-10 ring-1 ring-white/10",
+                      },
+                    }}
+                  />
+                </div>
+                <div className="min-w-0">
+                  <p
+                    className={`truncate text-sm font-medium ${
+                      isThemeDark ? "text-white" : "text-zinc-800"
+                    }`}
+                  >
+                    {shortName}
+                  </p>
+                  <p
+                    className={`text-xs ${
+                      isThemeDark ? "text-zinc-500" : "text-zinc-600"
+                    }`}
+                  >
+                    Free plan
+                  </p>
+                </div>
+              </div>
+            </div>
           </>
-        ) : null}
+        ) : (
+          <>
+            <div className="px-2 pt-2">
+              <div className="space-y-2">
+                {filteredPalette.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <button
+                      key={item.type}
+                      type="button"
+                      title={item.label}
+                      draggable
+                      onDragStart={(event) => onDragStart(event, item.type)}
+                      onClick={() => addNodeToCanvasCenter(item.type)}
+                      className={`flex w-full items-center justify-center rounded-lg p-2 transition-colors ${
+                        isThemeDark ? "hover:bg-white/5" : "hover:bg-black/5"
+                      }`}
+                    >
+                      <span className={`inline-flex size-8 items-center justify-center rounded-md ${item.iconBgClass}`}>
+                        <Icon className="h-4 w-4 text-white" />
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <div className="mt-auto p-2">
+              <div className="inline-flex h-10 w-10 items-center justify-center rounded-lg">
+                <UserButton
+                  appearance={{
+                    elements: {
+                      avatarBox: "h-10 w-10 ring-1 ring-white/10",
+                    },
+                  }}
+                />
+              </div>
+            </div>
+          </>
+        )}
       </aside>
 
       <section className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-14 items-center justify-between border-b border-zinc-800 bg-[#0f0f0f] px-4">
-          {isEditingWorkflowName ? (
-            <input
-              aria-label="Workflow name"
-              value={workflowName}
-              onChange={(event) => setWorkflowName(event.target.value)}
-              onBlur={() => {
-                setIsEditingWorkflowName(false);
-                void persistWorkflow(workflowName);
-              }}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") {
-                  event.preventDefault();
-                  setIsEditingWorkflowName(false);
-                  void persistWorkflow(workflowName);
-                }
-
-                if (event.key === "Escape") {
-                  event.preventDefault();
-                  setIsEditingWorkflowName(false);
-                }
-              }}
-              autoFocus
-              className="w-[320px] rounded-md border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-sm font-medium text-zinc-100 focus:border-zinc-500 focus:outline-none"
-            />
-          ) : (
-            <button
-              type="button"
-              onClick={() => setIsEditingWorkflowName(true)}
-              className="rounded-md border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-left text-sm font-medium text-zinc-100 hover:bg-zinc-800"
-            >
-              {workflowName}
-            </button>
-          )}
-
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                void persistWorkflow();
-              }}
-              disabled={isSaving}
-              className="rounded-md border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-sm text-zinc-200 hover:bg-zinc-800"
-            >
-              {isSaving ? "Saving..." : "Save"}
-            </button>
-            <button
-              type="button"
-              disabled={isRunning}
-              onClick={() => {
-                void runWorkflow("FULL");
-              }}
-              className="rounded-md border border-purple-500 bg-purple-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-purple-500"
-            >
-              {isRunning ? "Running..." : "Run"}
-            </button>
-            <button
-              type="button"
-              className="rounded-md border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-sm text-zinc-200 hover:bg-zinc-800"
-              disabled={!canUndo}
-              onClick={undo}
-            >
-              Undo
-            </button>
-            <button
-              type="button"
-              className="rounded-md border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-sm text-zinc-200 hover:bg-zinc-800"
-              disabled={!canRedo}
-              onClick={redo}
-            >
-              Redo
-            </button>
-            <button
-              type="button"
-              className="rounded-md border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-sm text-zinc-200 hover:bg-zinc-800"
-              onClick={exportWorkflowJson}
-            >
-              Export JSON
-            </button>
-            <button
-              type="button"
-              className="rounded-md border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-sm text-zinc-200 hover:bg-zinc-800"
-              onClick={() => importFileInputRef.current?.click()}
-            >
-              Import JSON
-            </button>
-            <button
-              type="button"
-              className="rounded-md border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-sm text-zinc-200 hover:bg-zinc-800"
-              onClick={loadSampleWorkflow}
-            >
-              Load Sample
-            </button>
-            <input
-              ref={importFileInputRef}
-              type="file"
-              accept="application/json"
-              className="hidden"
-              onChange={(event) => {
-                void importWorkflowJson(event);
-              }}
-            />
-          </div>
-        </header>
-
         <div className="flex min-h-0 flex-1">
           <div
             ref={wrapperRef}
-            className="relative min-w-0 flex-1 h-full w-full"
+            className={`relative h-full min-w-0 flex-1 w-full ${canvasThemeClass}`}
+            style={{
+              backgroundImage: canvasBackground,
+            }}
             onDrop={onDrop}
             onDragOver={onDragOver}
-            onClick={() => setContextMenu(null)}
+            onClick={() => {
+              setContextMenu(null);
+              setIsWorkflowMenuOpen(false);
+            }}
           >
+            <div className="pointer-events-none absolute left-4 top-3 z-20">
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setIsWorkflowMenuOpen((prev) => !prev);
+                  }}
+                  className={`pointer-events-auto inline-flex items-center gap-2 rounded-[20px] border px-3 py-2 text-left text-sm font-medium transition-colors ${
+                    isThemeDark
+                      ? "border-white/10 bg-[#1a1a1a] text-zinc-100 hover:bg-[#252525]"
+                      : "border-black/10 bg-white text-zinc-800 shadow-[0_8px_24px_rgba(15,23,42,0.14)] hover:bg-[#f8fafc]"
+                  }`}
+                >
+                  <span
+                    className={`inline-flex size-6 items-center justify-center rounded-md border text-[10px] font-bold ${
+                      isThemeDark
+                        ? "border-white/10 bg-[#2a2a2a] text-zinc-200"
+                        : "border-black/10 bg-[#edf1f6] text-zinc-700"
+                    }`}
+                  >
+                    K
+                  </span>
+                  {workflowName}
+                  <ChevronDown className={`h-4 w-4 ${isThemeDark ? "text-zinc-400" : "text-zinc-500"}`} />
+                </button>
+
+                {isWorkflowMenuOpen ? (
+                  <div
+                    className={`pointer-events-auto absolute left-0 top-full z-30 mt-2 w-[190px] rounded-xl border p-1.5 shadow-xl ${
+                      isThemeDark
+                        ? "border-white/10 bg-[#121212]"
+                        : "border-black/10 bg-white shadow-[0_12px_28px_rgba(15,23,42,0.18)]"
+                    }`}
+                    onClick={(event) => event.stopPropagation()}
+                  >
+                    <button
+                      type="button"
+                      className={`w-full rounded-md px-3 py-2 text-left text-sm ${
+                        isThemeDark
+                          ? "text-zinc-200 hover:bg-white/5"
+                          : "text-zinc-700 hover:bg-black/5"
+                      }`}
+                    >
+                      Back
+                    </button>
+                    <button
+                      type="button"
+                      className={`w-full rounded-md px-3 py-2 text-left text-sm ${
+                        isThemeDark
+                          ? "text-zinc-200 hover:bg-white/5"
+                          : "text-zinc-700 hover:bg-black/5"
+                      }`}
+                    >
+                      Workspaces
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+
+            <div className="pointer-events-none absolute right-4 top-3 z-20 flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setIsThemeDark((prev) => !prev)}
+                title="Toggle theme"
+                className={`pointer-events-auto inline-flex items-center justify-center rounded-lg border p-2 backdrop-blur transition-colors ${
+                  isThemeDark
+                    ? "border-white/10 bg-[#1a1a1a]/90 text-zinc-300 hover:bg-[#252525]"
+                    : "border-black/10 bg-white/90 text-zinc-700 shadow-[0_8px_24px_rgba(15,23,42,0.14)] hover:bg-[#f8fafc]"
+                }`}
+              >
+                {isThemeDark ? (
+                  <Moon className="h-4 w-4" />
+                ) : (
+                  <Sun className="h-4 w-4" />
+                )}
+              </button>
+
+              <div
+                className={`pointer-events-auto flex items-center gap-2 rounded-lg border px-3 py-1.5 backdrop-blur ${
+                  isThemeDark
+                    ? "border-white/10 bg-[#1a1a1a]/90"
+                    : "border-black/10 bg-white/90 shadow-[0_8px_24px_rgba(15,23,42,0.14)]"
+                }`}
+              >
+                <Download className={`h-4 w-4 ${isThemeDark ? "text-zinc-300" : "text-zinc-600"}`} />
+                <button
+                  type="button"
+                  className={`text-xs ${
+                    isThemeDark
+                      ? "text-zinc-200 hover:text-white"
+                      : "text-zinc-700 hover:text-zinc-900"
+                  }`}
+                  onClick={exportWorkflowJson}
+                >
+                  Export JSON
+                </button>
+                <span className={isThemeDark ? "text-zinc-700" : "text-zinc-400"}>|</span>
+                <Upload className={`h-4 w-4 ${isThemeDark ? "text-zinc-300" : "text-zinc-600"}`} />
+                <button
+                  type="button"
+                  className={`text-xs ${
+                    isThemeDark
+                      ? "text-zinc-200 hover:text-white"
+                      : "text-zinc-700 hover:text-zinc-900"
+                  }`}
+                  onClick={() => importFileInputRef.current?.click()}
+                >
+                  Import JSON
+                </button>
+                <span className={isThemeDark ? "text-zinc-700" : "text-zinc-400"}>|</span>
+                <Check className={`h-4 w-4 ${isThemeDark ? "text-zinc-300" : "text-zinc-600"}`} />
+                <button
+                  type="button"
+                  className={`text-xs ${
+                    isThemeDark
+                      ? "text-zinc-200 hover:text-white"
+                      : "text-zinc-700 hover:text-zinc-900"
+                  }`}
+                  onClick={loadSampleWorkflow}
+                >
+                  Load Sample
+                </button>
+              </div>
+
+              <div
+                className={`pointer-events-auto flex items-center gap-2 rounded-lg border px-3 py-1.5 backdrop-blur ${
+                  isThemeDark
+                    ? "border-white/10 bg-[#1a1a1a]/90"
+                    : "border-black/10 bg-white/90 shadow-[0_8px_24px_rgba(15,23,42,0.14)]"
+                }`}
+              >
+                <Save className={`h-4 w-4 ${isThemeDark ? "text-zinc-300" : "text-zinc-600"}`} />
+                <button
+                  type="button"
+                  onClick={() => {
+                    void persistWorkflow();
+                  }}
+                  disabled={isSaving}
+                  className={`text-xs disabled:opacity-60 ${
+                    isThemeDark
+                      ? "text-zinc-200 hover:text-white"
+                      : "text-zinc-700 hover:text-zinc-900"
+                  }`}
+                >
+                  {isSaving ? "Saving..." : "Save"}
+                </button>
+                <span className={isThemeDark ? "text-zinc-700" : "text-zinc-400"}>|</span>
+                <Send className={`h-4 w-4 ${isThemeDark ? "text-zinc-300" : "text-zinc-600"}`} />
+                <button
+                  type="button"
+                  disabled={isRunning}
+                  onClick={() => {
+                    void runWorkflow("FULL");
+                  }}
+                  className={`text-xs font-medium disabled:opacity-60 ${
+                    isThemeDark
+                      ? "text-zinc-100 hover:text-white"
+                      : "text-zinc-800 hover:text-zinc-900"
+                  }`}
+                >
+                  {isRunning ? "Running..." : "Run"}
+                </button>
+              </div>
+
+              <button
+                type="button"
+                title="Toggle history"
+                onClick={() => setIsHistoryOpen((prev) => !prev)}
+                className={`pointer-events-auto inline-flex items-center justify-center rounded-lg border p-2 backdrop-blur transition-colors ${
+                  isThemeDark
+                    ? isHistoryOpen
+                      ? "border-white/20 bg-white/10 text-white"
+                      : "border-white/10 bg-[#1a1a1a]/90 text-zinc-300 hover:bg-[#252525]"
+                    : isHistoryOpen
+                      ? "border-black/15 bg-black/5 text-zinc-800 shadow-[0_8px_24px_rgba(15,23,42,0.12)]"
+                      : "border-black/10 bg-white/90 text-zinc-700 shadow-[0_8px_24px_rgba(15,23,42,0.14)] hover:bg-[#f8fafc]"
+                }`}
+              >
+                <History className="h-4 w-4" />
+              </button>
+            </div>
+
             <ReactFlow
               className="h-full w-full"
               nodes={nodes}
               edges={edges}
               nodeTypes={nodeTypes}
+              panOnDrag={isPanMode}
+              selectionOnDrag={isDrawSelectionMode}
               onInit={setReactFlowInstance}
               onNodesChange={onNodesChange}
               onConnect={onConnect}
@@ -1031,29 +1259,53 @@ function WorkflowPageContent() {
                 variant={BackgroundVariant.Dots}
                 gap={16}
                 size={1}
-                color="#2a2a2a"
+                color={isThemeDark ? "#2a2a2a" : "#b9c1cf"}
               />
               <MiniMap
                 position="bottom-right"
                 style={{
-                  backgroundColor: "#111",
-                  border: "1px solid #333",
+                  backgroundColor: isThemeDark
+                    ? "rgba(17, 17, 17, 0.9)"
+                    : "rgba(255, 255, 255, 0.92)",
+                  border: isThemeDark
+                    ? "1px solid rgba(255,255,255,0.08)"
+                    : "1px solid rgba(0,0,0,0.08)",
+                  borderRadius: "10px",
+                  boxShadow: isThemeDark
+                    ? "none"
+                    : "0 8px 24px rgba(15,23,42,0.14)",
                 }}
-                nodeStrokeColor="#555"
-                nodeColor="#222"
-                maskColor="rgba(0, 0, 0, 0.25)"
-              />
-              <Controls
-                style={{
-                  backgroundColor: "#111",
-                  border: "1px solid #333",
-                }}
+                nodeStrokeColor={isThemeDark ? "#555" : "#64748b"}
+                nodeColor={isThemeDark ? "#222" : "#dbe1ea"}
+                maskColor={isThemeDark ? "rgba(0, 0, 0, 0.25)" : "rgba(99, 114, 131, 0.18)"}
               />
             </ReactFlow>
 
+            {nodes.length === 0 ? (
+              <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
+                <div className="-mt-12 text-center">
+                  <p className="text-[16px] font-medium tracking-[-0.01em] text-zinc-300">
+                    Add a node
+                  </p>
+                  <p className={`mt-2 text-[14px] font-normal ${isThemeDark ? "text-zinc-500" : "text-zinc-600"}`}>
+                    Double click, right click, or press{" "}
+                    <span
+                      className={`inline-flex h-7 w-7 items-center justify-center rounded-md border text-[14px] font-medium ${
+                        isThemeDark
+                          ? "border-white/10 bg-[#1b1b1b] text-zinc-300"
+                          : "border-black/10 bg-white text-zinc-600"
+                      }`}
+                    >
+                      N
+                    </span>
+                  </p>
+                </div>
+              </div>
+            ) : null}
+
             {contextMenu ? (
               <div
-                className="absolute z-30 min-w-[160px] rounded-md border border-zinc-700 bg-zinc-900 p-1 shadow-xl"
+                className="absolute z-30 min-w-[160px] rounded-lg border border-white/10 bg-[#141414] p-1 shadow-xl"
                 style={{
                   left: contextMenu.x,
                   top: contextMenu.y,
@@ -1062,7 +1314,7 @@ function WorkflowPageContent() {
               >
                 <button
                   type="button"
-                  className="w-full rounded px-2 py-1.5 text-left text-sm text-zinc-200 hover:bg-zinc-800"
+                  className="w-full rounded px-2 py-1.5 text-left text-sm text-zinc-200 hover:bg-white/5"
                   onClick={() => {
                     void runWorkflow("SINGLE", [contextMenu.nodeId]);
                     setContextMenu(null);
@@ -1072,7 +1324,7 @@ function WorkflowPageContent() {
                 </button>
                 <button
                   type="button"
-                  className="w-full rounded px-2 py-1.5 text-left text-sm text-red-300 hover:bg-zinc-800"
+                  className="w-full rounded px-2 py-1.5 text-left text-sm text-red-300 hover:bg-white/5"
                   onClick={() => {
                     removeNode(contextMenu.nodeId);
                     setContextMenu(null);
@@ -1082,38 +1334,245 @@ function WorkflowPageContent() {
                 </button>
               </div>
             ) : null}
-          </div>
 
-          <aside className="w-[280px] shrink-0 border-l border-zinc-800 bg-[#111] p-4">
-            <h2 className="text-sm font-semibold text-zinc-200">Workflow History</h2>
-            <WorkflowHistory
-              runs={workflowRunHistory}
-              isLoading={historyLoading}
-              onRefresh={() => {
-                if (!workflowId) {
-                  return;
-                }
-
-                void fetchRunHistory(workflowId);
-              }}
-            />
-
-            <div className="mt-4 rounded-md border border-zinc-800 bg-zinc-900/60 p-3 text-xs text-zinc-400">
-              {selectedNodes.length > 0 ? (
+            <div className="pointer-events-none absolute bottom-3 left-3 z-20 flex items-center gap-2">
+              <div
+                className={`pointer-events-auto flex items-center gap-1 rounded-2xl border p-2 backdrop-blur-xl ${
+                  isThemeDark
+                    ? "border-white/10 bg-[#262626]/80"
+                    : "border-black/10 bg-white/85 shadow-[0_8px_24px_rgba(15,23,42,0.14)]"
+                }`}
+              >
                 <button
                   type="button"
-                  onClick={() => {
-                    void runWorkflow("PARTIAL", selectedNodes);
-                  }}
-                  className="w-full rounded-md border border-zinc-700 bg-zinc-900 px-2 py-1.5 text-zinc-200 hover:bg-zinc-800"
+                  title="Undo"
+                  className={`rounded-lg p-2 disabled:opacity-50 ${
+                    isThemeDark
+                      ? "bg-[#1a1919]/70 text-zinc-200 hover:bg-[#2a2a2a]"
+                      : "bg-[#f8fafc] text-zinc-700 hover:bg-[#eef2f7]"
+                  }`}
+                  disabled={!canUndo}
+                  onClick={undo}
                 >
-                  Run Selected ({selectedNodes.length})
+                  <ChevronLeft className="h-4 w-4" />
                 </button>
-              ) : (
-                <span>Select nodes to enable partial run.</span>
-              )}
+                <button
+                  type="button"
+                  title="Redo"
+                  className={`rounded-lg p-2 disabled:opacity-50 ${
+                    isThemeDark
+                      ? "bg-[#1a1919]/70 text-zinc-200 hover:bg-[#2a2a2a]"
+                      : "bg-[#f8fafc] text-zinc-700 hover:bg-[#eef2f7]"
+                  }`}
+                  disabled={!canRedo}
+                  onClick={redo}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsShortcutsOpen(true)}
+                  className={`ml-1 inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs ${
+                    isThemeDark
+                      ? "bg-[#1a1919]/70 text-zinc-100 hover:bg-[#2a2a2a]"
+                      : "bg-[#f8fafc] text-zinc-700 hover:bg-[#eef2f7]"
+                  }`}
+                >
+                  <Keyboard className="h-4 w-4" />
+                  Keyboard shortcuts
+                </button>
+              </div>
+            </div>
+
+            <div className="pointer-events-none absolute bottom-3 left-1/2 z-20 -translate-x-1/2">
+              <div
+                className={`pointer-events-auto flex items-center gap-1 rounded-2xl border p-2 backdrop-blur-xl ${
+                  isThemeDark
+                    ? "border-white/10 bg-[#262626]/80"
+                    : "border-black/10 bg-white/85 shadow-[0_8px_24px_rgba(15,23,42,0.14)]"
+                }`}
+              >
+                <button
+                  type="button"
+                  title="New node"
+                  className={`rounded-lg p-2 ${
+                    isThemeDark
+                      ? "text-zinc-300 hover:bg-white/10"
+                      : "text-zinc-700 hover:bg-black/5"
+                  }`}
+                  onClick={() => addNodeToCanvasCenter("text")}
+                >
+                  <Plus className="h-5 w-5" />
+                </button>
+                <button
+                  type="button"
+                  title="Draw selections"
+                  className={`rounded-lg p-2 hover:bg-white/10 ${
+                    isDrawSelectionMode
+                      ? isThemeDark
+                        ? "bg-white/10 text-zinc-100"
+                        : "bg-black/5 text-zinc-900"
+                      : isThemeDark
+                        ? "text-zinc-300"
+                        : "text-zinc-700 hover:bg-black/5"
+                  }`}
+                  onClick={() => {
+                    setIsDrawSelectionMode((prev) => !prev);
+                  }}
+                >
+                  <Circle className="h-5 w-5" />
+                </button>
+                <button
+                  type="button"
+                  title="Pan"
+                  onClick={() => setIsPanMode((prev) => !prev)}
+                  className={`rounded-lg p-2 ${
+                    isPanMode
+                      ? isThemeDark
+                        ? "bg-white/10 text-zinc-100"
+                        : "bg-black/5 text-zinc-900"
+                      : isThemeDark
+                        ? "text-zinc-300 hover:bg-white/10"
+                        : "text-zinc-700 hover:bg-black/5"
+                  }`}
+                >
+                  <Hand className="h-5 w-5" />
+                </button>
+                <button
+                  type="button"
+                  title="Cut connections"
+                  className={`rounded-lg p-2 ${
+                    isThemeDark
+                      ? "text-zinc-300 hover:bg-white/10"
+                      : "text-zinc-700 hover:bg-black/5"
+                  }`}
+                  onClick={cutSelectedConnections}
+                >
+                  <Scissors className="h-5 w-5" />
+                </button>
+                <button
+                  type="button"
+                  title="Presets"
+                  className={`rounded-lg p-2 ${
+                    isThemeDark
+                      ? "text-zinc-300 hover:bg-white/10"
+                      : "text-zinc-700 hover:bg-black/5"
+                  }`}
+                  onClick={loadSampleWorkflow}
+                >
+                  <Sparkles className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <aside
+            className={`shrink-0 overflow-hidden border-l transition-[width,padding,opacity] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${rightPanelThemeClass} ${
+              isHistoryOpen
+                ? "w-[288px] p-4 opacity-100"
+                : "w-0 border-transparent p-0 opacity-0 pointer-events-none"
+            }`}
+          >
+            <div
+              className={`h-full transition-opacity duration-300 ${
+                isHistoryOpen ? "opacity-100 delay-100" : "opacity-0"
+              }`}
+            >
+              <h2
+                className={`text-sm font-semibold uppercase tracking-[0.14em] ${
+                  isThemeDark ? "text-zinc-500" : "text-zinc-600"
+                }`}
+              >
+                Workflow History
+              </h2>
+              <WorkflowHistory
+                runs={workflowRunHistory}
+                isLoading={historyLoading}
+                onRefresh={() => {
+                  if (!workflowId) {
+                    return;
+                  }
+
+                  void fetchRunHistory(workflowId);
+                }}
+              />
+
+              <div
+                className={`mt-4 rounded-lg border p-3 text-xs ${
+                  isThemeDark
+                    ? "border-white/10 bg-[#111111] text-zinc-400"
+                    : "border-black/10 bg-white text-zinc-600 shadow-[0_8px_24px_rgba(15,23,42,0.1)]"
+                }`}
+              >
+                {selectedNodes.length > 0 ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      void runWorkflow("PARTIAL", selectedNodes);
+                    }}
+                    className={`w-full rounded-md border px-2 py-1.5 ${
+                      isThemeDark
+                        ? "border-white/10 bg-[#1a1a1a] text-zinc-200 hover:bg-[#252525]"
+                        : "border-black/10 bg-[#f8fafc] text-zinc-700 hover:bg-[#eef2f7]"
+                    }`}
+                  >
+                    Run Selected ({selectedNodes.length})
+                  </button>
+                ) : (
+                  <span>Select nodes to enable partial run.</span>
+                )}
+              </div>
             </div>
           </aside>
+
+          {isShortcutsOpen ? (
+            <div
+              className="absolute inset-0 z-40 flex items-center justify-center bg-black/55 backdrop-blur-[2px]"
+              onClick={() => setIsShortcutsOpen(false)}
+            >
+              <div
+                className="w-[min(92vw,520px)] rounded-2xl border border-white/10 bg-[#090909] p-6 shadow-2xl"
+                onClick={(event) => event.stopPropagation()}
+              >
+                <div className="mb-4 flex items-start justify-between gap-4">
+                  <div>
+                    <h3 className="text-xl font-semibold text-zinc-100">Keyboard Shortcuts</h3>
+                    <p className="mt-1 text-sm text-zinc-500">
+                      Quickly navigate and create with these shortcuts.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsShortcutsOpen(false)}
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-[#171717] text-zinc-300 hover:bg-[#242424]"
+                  >
+                    <span className="text-lg leading-none">×</span>
+                  </button>
+                </div>
+
+                <div className="space-y-2">
+                  {shortcutsRows.map((row) => (
+                    <div key={row.action} className="flex items-center justify-between rounded-md px-2 py-1.5">
+                      <span className="text-sm text-zinc-300">{row.action}</span>
+                      <span className="rounded-md border border-white/10 bg-[#171717] px-2 py-0.5 text-xs text-zinc-400">
+                        {row.key}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : null}
+
+          <input
+            ref={importFileInputRef}
+            type="file"
+            accept="application/json"
+            className="hidden"
+            onChange={(event) => {
+              void importWorkflowJson(event);
+            }}
+          />
         </div>
       </section>
     </div>

@@ -64,30 +64,30 @@ function formatTimestamp(value: string) {
 
 function statusBadgeClasses(status: WorkflowRun["status"]) {
   if (status === "SUCCESS") {
-    return "border-emerald-500/30 bg-emerald-500/10 text-emerald-300";
+    return "border-emerald-500/30 bg-emerald-500/15 text-emerald-200";
   }
 
   if (status === "FAILED") {
-    return "border-red-500/30 bg-red-500/10 text-red-300";
+    return "border-red-500/30 bg-red-500/15 text-red-200";
   }
 
   if (status === "PARTIAL") {
-    return "border-amber-500/30 bg-amber-500/10 text-amber-300";
+    return "border-amber-500/30 bg-amber-500/15 text-amber-200";
   }
 
-  return "border-yellow-500/30 bg-yellow-500/10 text-yellow-300";
+  return "border-zinc-500/30 bg-zinc-500/20 text-zinc-200";
 }
 
 function scopeBadgeClasses(scope: WorkflowRun["scope"]) {
   if (scope === "FULL") {
-    return "border-sky-500/30 bg-sky-500/10 text-sky-300";
+    return "border-sky-500/30 bg-sky-500/15 text-sky-200";
   }
 
   if (scope === "PARTIAL") {
-    return "border-violet-500/30 bg-violet-500/10 text-violet-300";
+    return "border-violet-500/30 bg-violet-500/15 text-violet-200";
   }
 
-  return "border-fuchsia-500/30 bg-fuchsia-500/10 text-fuchsia-300";
+  return "border-fuchsia-500/30 bg-fuchsia-500/15 text-fuchsia-200";
 }
 
 function truncateText(value: string | null, maxLength = 60) {
@@ -150,7 +150,7 @@ export default function WorkflowHistory({ runs, isLoading, onRefresh }: Workflow
 
   if (isLoading) {
     return (
-      <div className="mt-4 rounded-md border border-zinc-800 bg-zinc-900/60 p-4 text-sm text-zinc-400">
+      <div className="mt-4 rounded-lg border border-white/10 bg-[#111111] p-4 text-sm text-zinc-400">
         Loading runs...
       </div>
     );
@@ -158,7 +158,7 @@ export default function WorkflowHistory({ runs, isLoading, onRefresh }: Workflow
 
   if (sortedRuns.length === 0) {
     return (
-      <div className="mt-4 rounded-md border border-zinc-800 bg-zinc-900/60 p-4 text-sm text-zinc-500">
+      <div className="mt-4 rounded-lg border border-white/10 bg-[#111111] p-4 text-sm text-zinc-500">
         No runs yet
       </div>
     );
@@ -171,11 +171,11 @@ export default function WorkflowHistory({ runs, isLoading, onRefresh }: Workflow
         const runNumber = sortedRuns.length - index;
 
         return (
-          <div key={run.id} className="rounded-md border border-zinc-800 bg-zinc-900/60">
+          <div key={run.id} className={`rounded-lg border bg-[#1e1e1e] ${run.status === "RUNNING" ? "border-zinc-500/30" : "border-white/10"}`}>
             <button
               type="button"
               onClick={() => toggleRun(run.id)}
-              className="w-full px-3 py-3 text-left hover:bg-zinc-800/40"
+              className="w-full px-3 py-3 text-left hover:bg-white/5"
             >
               <div className="flex items-start justify-between gap-2">
                 <div>
@@ -205,13 +205,13 @@ export default function WorkflowHistory({ runs, isLoading, onRefresh }: Workflow
             </button>
 
             {isExpanded ? (
-              <div className="border-t border-zinc-800 px-3 py-2">
+              <div className="border-t border-white/10 px-3 py-2">
                 {(run.nodeRuns ?? []).length === 0 ? (
                   <p className="text-xs text-zinc-500">No node-level data.</p>
                 ) : (
                   <div className="space-y-2">
                     {(run.nodeRuns ?? []).map((nodeRun) => (
-                      <div key={nodeRun.id} className="rounded-md border border-zinc-800 bg-[#161616] p-2">
+                      <div key={nodeRun.id} className="rounded-md border border-white/10 bg-[#151515] p-2">
                         <div className="flex items-center justify-between gap-2 text-xs">
                           <div className="flex items-center gap-2 text-zinc-200">
                             <NodeRunStatusIcon status={nodeRun.status} />

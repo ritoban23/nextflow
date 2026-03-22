@@ -208,14 +208,16 @@ export default function UploadVideoNode({ id, data }: NodeProps<UploadVideoNodeD
   };
 
   return (
-    <div className="min-w-[280px] rounded-lg border border-[#2a2a2a] bg-[#1a1a1a] p-3 text-zinc-100 shadow-sm">
+    <div className="min-w-[280px] rounded-[10px] border border-white/10 bg-[#1e1e1e] p-3 text-zinc-100 shadow-[0_10px_30px_-18px_rgba(0,0,0,0.8)]">
       <div className="mb-2 flex items-center gap-2 text-sm font-medium text-zinc-200">
-        <Video className="h-4 w-4 text-zinc-300" />
+        <span className="inline-flex size-6 items-center justify-center rounded-md bg-[#f97316]">
+          <Video className="h-3.5 w-3.5 text-white" />
+        </span>
         <span>Upload Video</span>
       </div>
 
       {uppyInstance ? (
-        <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-200 hover:bg-zinc-800">
+        <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-white/10 bg-[#111] px-3 py-2 text-sm text-zinc-200 hover:bg-[#1c1c1c]">
           <span>{isUploading ? "Uploading..." : "Choose video"}</span>
           <input
             type="file"
@@ -239,7 +241,7 @@ export default function UploadVideoNode({ id, data }: NodeProps<UploadVideoNodeD
         <video
           src={videoUrl}
           controls
-          className="mt-3 max-h-[220px] w-full rounded-md border border-zinc-700"
+          className="mt-3 max-h-[220px] w-full rounded-md border border-white/10 bg-[#101010]"
         />
       ) : null}
 

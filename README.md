@@ -1,36 +1,70 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# NextFlow
 
-## Getting Started
+NextFlow is a visual workflow builder focused on LLM and media-assisted automation.
+It is built around a canvas-style editor with typed node connections, execution
+history, and authenticated user-scoped persistence.
 
-First, run the development server:
+## Why This Project Exists
+
+1. Provide a polished, node-based workflow authoring experience.
+2. Support LLM and media workflows with execution visibility.
+3. Keep UI quality high while preserving strict workflow logic guarantees.
+
+## Tech Stack
+
+1. Next.js App Router + TypeScript
+2. React Flow for canvas interactions
+3. Clerk for authentication and user identity
+4. Prisma + PostgreSQL for persistence
+5. Trigger.dev for asynchronous workflow execution
+6. Tailwind CSS + Lucide React for UI
+7. Zustand for client state management
+
+## Local Development
+
+### Prerequisites
+
+1. Node.js 20+
+2. npm (package manager pinned in package.json)
+
+### Setup
+
+```bash
+npm ci
+cp .env.example .env
+```
+
+Populate required environment variables in .env.
+
+### Run
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Quality Commands
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run lint
+npm run typecheck
+npm run prettier-check
+npm run format
+```
 
-## Learn More
+## CI Standards in This Repo
 
-To learn more about Next.js, take a look at the following resources:
+1. CI workflow runs lint, typecheck, and format checks on PRs and main branch pushes.
+2. Path-scoped Trigger checks run only when Trigger-related code paths change.
+3. Formatting is enforced through Prettier configuration and check scripts.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Security
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+See SECURITY.md for vulnerability reporting and response expectations.
 
-## Deploy on Vercel
+## Contributing
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. Keep functional workflow logic unchanged unless explicitly requested.
+2. Prefer small, focused PRs with clear scope.
+3. Run lint, typecheck, and prettier-check before opening a PR.
