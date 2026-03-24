@@ -23,25 +23,21 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  Crop,
   Download,
-  FileImage,
-  FileVideo,
   Hand,
   History,
   Keyboard,
   Moon,
-  MessageSquareText,
   Plus,
   Save,
   Scissors,
   Send,
   Sparkles,
   Sun,
-  Type,
   Upload,
 } from "lucide-react";
 import { UserButton, useUser } from "@clerk/nextjs";
+import Image from "next/image";
 
 import { useWorkflowStore } from "@/lib/store";
 import TextNode from "@/components/nodes/TextNode";
@@ -57,8 +53,7 @@ import "reactflow/dist/style.css";
 type NodePaletteItem = {
   type: string;
   label: string;
-  icon: typeof Type;
-  iconBgClass: string;
+  iconPath: string;
 };
 
 type WorkflowNodeType =
@@ -323,12 +318,12 @@ function isConnectionValid(connection: Connection, nodes: Node[]) {
 }
 
 const NODE_PALETTE: NodePaletteItem[] = [
-  { type: "text", label: "Text", icon: Type, iconBgClass: "bg-[#1e293b]" },
-  { type: "uploadImage", label: "Upload Image", icon: FileImage, iconBgClass: "bg-[#0ea5e9]" },
-  { type: "uploadVideo", label: "Upload Video", icon: FileVideo, iconBgClass: "bg-[#f97316]" },
-  { type: "llm", label: "LLM", icon: Sparkles, iconBgClass: "bg-[#facc15]" },
-  { type: "cropImage", label: "Crop Image", icon: Crop, iconBgClass: "bg-[#a855f7]" },
-  { type: "extractFrame", label: "Extract Frame", icon: MessageSquareText, iconBgClass: "bg-[#d97706]" },
+  { type: "text", label: "Text", iconPath: "/text2.png" },
+  { type: "uploadImage", label: "Upload Image", iconPath: "/imageV4.png" },
+  { type: "uploadVideo", label: "Upload Video", iconPath: "/videoV2.png" },
+  { type: "llm", label: "LLM", iconPath: "/llm.png" },
+  { type: "cropImage", label: "Crop Image", iconPath: "/crop.png" },
+  { type: "extractFrame", label: "Extract Frame", iconPath: "/extract.png" },
 ];
 
 const nodeTypes = {
@@ -351,7 +346,7 @@ function WorkflowPageContent() {
   const [historyLoading, setHistoryLoading] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(true);
   const [isThemeDark, setIsThemeDark] = useState(true);
-  const [isWorkflowMenuOpen, setIsWorkflowMenuOpen] = useState(false);
+  const [isEditingWorkflowName, setIsEditingWorkflowName] = useState(false);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
   const [isDrawSelectionMode, setIsDrawSelectionMode] = useState(false);
   const [isPanMode, setIsPanMode] = useState(true);
@@ -929,8 +924,6 @@ function WorkflowPageContent() {
               </h2>
               <div className="space-y-2">
                 {filteredPalette.map((item) => {
-                  const Icon = item.icon;
-
                   return (
                     <button
                       key={item.type}
@@ -944,8 +937,14 @@ function WorkflowPageContent() {
                           : "text-zinc-700 hover:bg-black/5"
                       }`}
                     >
-                      <span className={`inline-flex size-7 items-center justify-center rounded-md ${item.iconBgClass}`}>
-                        <Icon className="h-4 w-4 text-white" />
+                      <span className="inline-flex size-7 items-center justify-center rounded-md bg-white/10 p-1">
+                        <Image
+                          src={item.iconPath}
+                          alt={`${item.label} icon`}
+                          width={16}
+                          height={16}
+                          className="h-4 w-4 object-contain"
+                        />
                       </span>
                       <span>{item.label}</span>
                     </button>
@@ -993,7 +992,6 @@ function WorkflowPageContent() {
             <div className="px-2 pt-2">
               <div className="space-y-2">
                 {filteredPalette.map((item) => {
-                  const Icon = item.icon;
                   return (
                     <button
                       key={item.type}
@@ -1006,8 +1004,14 @@ function WorkflowPageContent() {
                         isThemeDark ? "hover:bg-white/5" : "hover:bg-black/5"
                       }`}
                     >
-                      <span className={`inline-flex size-8 items-center justify-center rounded-md ${item.iconBgClass}`}>
-                        <Icon className="h-4 w-4 text-white" />
+                      <span className="inline-flex size-8 items-center justify-center rounded-md bg-white/10 p-1.5">
+                        <Image
+                          src={item.iconPath}
+                          alt={`${item.label} icon`}
+                          width={18}
+                          height={18}
+                          className="h-[18px] w-[18px] object-contain"
+                        />
                       </span>
                     </button>
                   );
@@ -1041,17 +1045,12 @@ function WorkflowPageContent() {
             onDragOver={onDragOver}
             onClick={() => {
               setContextMenu(null);
-              setIsWorkflowMenuOpen(false);
+              setIsEditingWorkflowName(false);
             }}
           >
             <div className="pointer-events-none absolute left-4 top-3 z-20">
               <div className="relative">
-                <button
-                  type="button"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    setIsWorkflowMenuOpen((prev) => !prev);
-                  }}
+                <div
                   className={`pointer-events-auto inline-flex items-center gap-2 rounded-[20px] border px-3 py-2 text-left text-sm font-medium transition-colors ${
                     isThemeDark
                       ? "border-white/10 bg-[#1a1a1a] text-zinc-100 hover:bg-[#252525]"
@@ -1067,41 +1066,44 @@ function WorkflowPageContent() {
                   >
                     K
                   </span>
-                  {workflowName}
-                  <ChevronDown className={`h-4 w-4 ${isThemeDark ? "text-zinc-400" : "text-zinc-500"}`} />
-                </button>
+                  {isEditingWorkflowName ? (
+                    <input
+                      aria-label="Workflow name"
+                      value={workflowName}
+                      onChange={(event) => setWorkflowName(event.target.value)}
+                      onBlur={() => {
+                        setIsEditingWorkflowName(false);
+                        void persistWorkflow(workflowName);
+                      }}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                          event.preventDefault();
+                          setIsEditingWorkflowName(false);
+                          void persistWorkflow(workflowName);
+                        }
 
-                {isWorkflowMenuOpen ? (
-                  <div
-                    className={`pointer-events-auto absolute left-0 top-full z-30 mt-2 w-[190px] rounded-xl border p-1.5 shadow-xl ${
-                      isThemeDark
-                        ? "border-white/10 bg-[#121212]"
-                        : "border-black/10 bg-white shadow-[0_12px_28px_rgba(15,23,42,0.18)]"
-                    }`}
-                    onClick={(event) => event.stopPropagation()}
-                  >
+                        if (event.key === "Escape") {
+                          event.preventDefault();
+                          setIsEditingWorkflowName(false);
+                        }
+                      }}
+                      autoFocus
+                      className="w-[130px] bg-transparent outline-none"
+                    />
+                  ) : (
                     <button
                       type="button"
-                      className={`w-full rounded-md px-3 py-2 text-left text-sm ${
-                        isThemeDark
-                          ? "text-zinc-200 hover:bg-white/5"
-                          : "text-zinc-700 hover:bg-black/5"
-                      }`}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setIsEditingWorkflowName(true);
+                      }}
+                      className="truncate"
                     >
-                      Back
+                      {workflowName}
                     </button>
-                    <button
-                      type="button"
-                      className={`w-full rounded-md px-3 py-2 text-left text-sm ${
-                        isThemeDark
-                          ? "text-zinc-200 hover:bg-white/5"
-                          : "text-zinc-700 hover:bg-black/5"
-                      }`}
-                    >
-                      Workspaces
-                    </button>
-                  </div>
-                ) : null}
+                  )}
+                  <ChevronDown className={`h-4 w-4 ${isThemeDark ? "text-zinc-400" : "text-zinc-500"}`} />
+                </div>
               </div>
             </div>
 
