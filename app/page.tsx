@@ -6,25 +6,20 @@ import { ArrowRight, Sparkles, Star } from "lucide-react";
 import { useUser } from "@clerk/nextjs";
 import Image from "next/image";
 
-type RevealSpec = {
-  id: string;
-  delay: string;
+const REVEAL_DELAYS: Record<string, string> = {
+  "hero-title": "0ms",
+  "hero-subtitle": "120ms",
+  "hero-cta": "240ms",
+  "mission-title": "0ms",
+  "mission-copy": "100ms",
+  "logo-1": "0ms",
+  "logo-2": "120ms",
+  "logo-3": "220ms",
+  "logo-4": "320ms",
+  "works-title": "0ms",
+  "card-1": "0ms",
+  "card-2": "160ms",
 };
-
-const revealSpecs: RevealSpec[] = [
-  { id: "hero-title", delay: "0ms" },
-  { id: "hero-subtitle", delay: "120ms" },
-  { id: "hero-cta", delay: "240ms" },
-  { id: "mission-title", delay: "0ms" },
-  { id: "mission-copy", delay: "100ms" },
-  { id: "logo-1", delay: "0ms" },
-  { id: "logo-2", delay: "120ms" },
-  { id: "logo-3", delay: "220ms" },
-  { id: "logo-4", delay: "320ms" },
-  { id: "works-title", delay: "0ms" },
-  { id: "card-1", delay: "0ms" },
-  { id: "card-2", delay: "160ms" },
-];
 
 function formatClock(now: Date) {
   let hours = now.getHours();
@@ -39,6 +34,7 @@ export default function Home() {
   const { isSignedIn } = useUser();
   const [clock, setClock] = useState(() => formatClock(new Date()));
   const [scrolled, setScrolled] = useState(false);
+  const [scrollY, setScrollY] = useState(0);
   const [visibleIds, setVisibleIds] = useState<Record<string, boolean>>({
     "hero-title": false,
   });
@@ -54,8 +50,20 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    let ticking = false;
+
     const updateScrollState = () => {
-      setScrolled(window.scrollY > 48);
+      if (ticking) {
+        return;
+      }
+
+      ticking = true;
+      window.requestAnimationFrame(() => {
+        const next = window.scrollY;
+        setScrolled(next > 48);
+        setScrollY(next);
+        ticking = false;
+      });
     };
 
     updateScrollState();
@@ -101,11 +109,10 @@ export default function Home() {
     };
   }, []);
 
-  const scrollY = typeof window === "undefined" ? 0 : window.scrollY;
-  const heroOffset = Math.min(scrollY * 0.22, 160);
-  const heroOpacity = Math.max(1 - scrollY / 700, 0.2);
-  const cardUpOffset = Math.max(scrollY * -0.04, -120);
-  const cardDownOffset = Math.min(scrollY * 0.04, 120);
+  const heroOffset = Math.min(scrollY * 0.26, 190);
+  const heroOpacity = Math.max(1 - scrollY / 620, 0.15);
+  const cardUpOffset = Math.max(scrollY * -0.06, -150);
+  const cardDownOffset = Math.min(scrollY * 0.06, 150);
 
   const revealClass = (id: string) =>
     visibleIds[id]
@@ -222,6 +229,7 @@ export default function Home() {
           <h1
             data-reveal-id="hero-title"
             className={`font-serif text-5xl leading-[1.08] tracking-tight text-[#ffe0e0] drop-shadow-[0_0_10px_rgba(255,255,255,0.55)] transition-all duration-700 md:text-7xl ${revealClass("hero-title")}`}
+            style={{ transitionDelay: REVEAL_DELAYS["hero-title"] }}
           >
             Nextflow.
             <br />
@@ -231,6 +239,7 @@ export default function Home() {
           <p
             data-reveal-id="hero-subtitle"
             className={`mx-auto mt-7 max-w-2xl text-base font-light leading-relaxed tracking-wide text-[#ffe0e0]/90 drop-shadow-[0_0_10px_rgba(255,255,255,0.45)] transition-all duration-700 md:text-lg ${revealClass("hero-subtitle")}`}
+            style={{ transitionDelay: REVEAL_DELAYS["hero-subtitle"] }}
           >
             Build multimodal AI workflows with visual nodes, fast iteration, and production-ready orchestration.
           </p>
@@ -238,6 +247,7 @@ export default function Home() {
           <div
             data-reveal-id="hero-cta"
             className={`mt-12 flex flex-col items-center gap-6 transition-all duration-700 ${revealClass("hero-cta")}`}
+            style={{ transitionDelay: REVEAL_DELAYS["hero-cta"] }}
           >
             <Link
               href={isSignedIn ? "/workflow" : "/sign-in"}
@@ -255,28 +265,35 @@ export default function Home() {
             </div>
           </div>
         </div>
+
+        <div className="pointer-events-none absolute bottom-0 left-0 right-0 z-20 h-44 bg-gradient-to-b from-transparent via-[#050505]/70 to-[#050505]" />
       </section>
 
+      <div className="pointer-events-none relative z-10 -mt-20 h-24 bg-[radial-gradient(80%_100%_at_50%_0%,rgba(255,69,0,0.18)_0%,rgba(255,69,0,0.05)_40%,transparent_70%)] blur-2xl" />
+
       <section id="expertise" className="relative py-28">
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-[#050505] to-transparent" />
         <div className="mx-auto max-w-6xl px-6">
           <h2
             data-reveal-id="mission-title"
             className={`mx-auto max-w-4xl text-center font-serif text-3xl leading-tight text-white/90 transition-all duration-700 md:text-5xl ${revealClass("mission-title")}`}
+            style={{ transitionDelay: REVEAL_DELAYS["mission-title"] }}
           >
             We design the execution layer where your product ideas become living systems.
           </h2>
           <p
             data-reveal-id="mission-copy"
             className={`mx-auto mt-8 max-w-3xl text-center text-xl font-light leading-relaxed text-zinc-400 transition-all duration-700 md:text-2xl ${revealClass("mission-copy")}`}
+            style={{ transitionDelay: REVEAL_DELAYS["mission-copy"] }}
           >
             Fewer dashboards. More outcomes. Connect media, prompts, and transformations in one visual runtime.
           </p>
 
           <div className="mt-24 grid grid-cols-2 place-items-center gap-8 opacity-45 grayscale transition-all duration-500 hover:grayscale-0 md:grid-cols-4">
-            <div data-reveal-id="logo-1" className={`text-xl font-semibold tracking-[0.22em] text-zinc-300 transition-all duration-700 ${revealClass("logo-1")}`}>OPENAI</div>
-            <div data-reveal-id="logo-2" className={`text-xl font-semibold tracking-[0.22em] text-zinc-300 transition-all duration-700 ${revealClass("logo-2")}`}>ANTHROPIC</div>
-            <div data-reveal-id="logo-3" className={`text-xl font-semibold tracking-[0.22em] text-zinc-300 transition-all duration-700 ${revealClass("logo-3")}`}>GEMINI</div>
-            <div data-reveal-id="logo-4" className={`text-xl font-semibold tracking-[0.22em] text-zinc-300 transition-all duration-700 ${revealClass("logo-4")}`}>REPLICATE</div>
+            <div data-reveal-id="logo-1" className={`text-xl font-semibold tracking-[0.22em] text-zinc-300 transition-all duration-700 ${revealClass("logo-1")}`} style={{ transitionDelay: REVEAL_DELAYS["logo-1"] }}>OPENAI</div>
+            <div data-reveal-id="logo-2" className={`text-xl font-semibold tracking-[0.22em] text-zinc-300 transition-all duration-700 ${revealClass("logo-2")}`} style={{ transitionDelay: REVEAL_DELAYS["logo-2"] }}>ANTHROPIC</div>
+            <div data-reveal-id="logo-3" className={`text-xl font-semibold tracking-[0.22em] text-zinc-300 transition-all duration-700 ${revealClass("logo-3")}`} style={{ transitionDelay: REVEAL_DELAYS["logo-3"] }}>GEMINI</div>
+            <div data-reveal-id="logo-4" className={`text-xl font-semibold tracking-[0.22em] text-zinc-300 transition-all duration-700 ${revealClass("logo-4")}`} style={{ transitionDelay: REVEAL_DELAYS["logo-4"] }}>REPLICATE</div>
           </div>
         </div>
       </section>
@@ -287,6 +304,7 @@ export default function Home() {
           <h2
             data-reveal-id="works-title"
             className={`mb-20 text-center font-serif text-5xl leading-[0.95] tracking-tight transition-all duration-700 md:text-7xl ${revealClass("works-title")}`}
+            style={{ transitionDelay: REVEAL_DELAYS["works-title"] }}
           >
             Design your
             <br />
@@ -297,7 +315,11 @@ export default function Home() {
             <article
               data-reveal-id="card-1"
               className={`rounded-3xl bg-[#ff4500] p-8 shadow-2xl transition-all duration-700 hover:shadow-[0_20px_50px_rgba(255,69,0,0.32)] md:p-12 ${revealClass("card-1")}`}
-              style={{ transform: `translateY(${cardDownOffset}px)` }}
+              style={{
+                transform: `translate3d(0, ${cardDownOffset}px, 0)`,
+                transitionDelay: REVEAL_DELAYS["card-1"],
+                willChange: "transform",
+              }}
             >
               <div className="flex items-start justify-between">
                 <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-black/10">
@@ -315,7 +337,11 @@ export default function Home() {
             <article
               data-reveal-id="card-2"
               className={`rounded-3xl border border-white/10 bg-[#111111] p-8 shadow-2xl transition-all duration-700 hover:border-[#ff4500]/55 md:mt-24 md:p-12 ${revealClass("card-2")}`}
-              style={{ transform: `translateY(${cardUpOffset}px)` }}
+              style={{
+                transform: `translate3d(0, ${cardUpOffset}px, 0)`,
+                transitionDelay: REVEAL_DELAYS["card-2"],
+                willChange: "transform",
+              }}
             >
               <div className="flex items-start justify-between">
                 <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-white/5">
@@ -346,14 +372,6 @@ export default function Home() {
           </div>
         </div>
       </footer>
-
-      {revealSpecs.map((spec) => (
-        <style key={spec.id} jsx global>{`
-          [data-reveal-id="${spec.id}"] {
-            transition-delay: ${spec.delay};
-          }
-        `}</style>
-      ))}
     </div>
   );
 }
