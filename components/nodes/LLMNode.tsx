@@ -11,6 +11,7 @@ import {
 } from "reactflow";
 
 import { useWorkflowStore } from "@/lib/store";
+import { Button } from "@/components/ui/button";
 
 type LLMNodeData = {
   model?:
@@ -224,15 +225,16 @@ export default function LLMNode({ id, data }: NodeProps<LLMNodeData>) {
         </div>
       </div>
 
-      <button
+      <Button
+        variant="ghost"
         type="button"
         onClick={runNode}
         disabled={isRunning}
-        className="mt-3 inline-flex items-center gap-2 rounded-md border border-white/10 bg-[#171717] px-3 py-1.5 text-sm font-medium text-zinc-100 hover:bg-[#222] disabled:cursor-not-allowed disabled:opacity-70"
+        className="mt-3 h-auto inline-flex items-center gap-2 rounded-md border border-white/10 bg-[#171717] px-3 py-1.5 text-sm font-medium text-zinc-100 hover:bg-[#222] disabled:cursor-not-allowed disabled:opacity-70"
       >
         {isRunning ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
         Run Node
-      </button>
+      </Button>
 
       {isComplete && inlineResult ? (
         <div className="mt-3 rounded-md border border-white/10 bg-[#111] p-2">
