@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo } from "react";
 import { Crop } from "lucide-react";
+import { useMemo } from "react";
 import {
   Handle,
   Position,
@@ -29,14 +29,17 @@ const handleStyle = {
 function hasIncomingConnection(
   edges: Edge[],
   nodeId: string,
-  handleId: string
+  handleId: string,
 ): boolean {
   return edges.some(
-    (edge) => edge.target === nodeId && edge.targetHandle === handleId
+    (edge) => edge.target === nodeId && edge.targetHandle === handleId,
   );
 }
 
-export default function CropImageNode({ id, data }: NodeProps<CropImageNodeData>) {
+export default function CropImageNode({
+  id,
+  data,
+}: NodeProps<CropImageNodeData>) {
   const edges = useEdges();
   const updateNode = useWorkflowStore((state) => state.updateNode);
 
@@ -48,7 +51,7 @@ export default function CropImageNode({ id, data }: NodeProps<CropImageNodeData>
       widthPercent: hasIncomingConnection(edges, id, "width_percent"),
       heightPercent: hasIncomingConnection(edges, id, "height_percent"),
     }),
-    [edges, id]
+    [edges, id],
   );
 
   const xPercent = data?.xPercent ?? 0;
@@ -59,7 +62,7 @@ export default function CropImageNode({ id, data }: NodeProps<CropImageNodeData>
   const setNumericValue = (
     key: keyof CropImageNodeData,
     rawValue: string,
-    fallback: number
+    fallback: number,
   ) => {
     const next = Number(rawValue);
 
@@ -105,7 +108,9 @@ export default function CropImageNode({ id, data }: NodeProps<CropImageNodeData>
             type="number"
             value={xPercent}
             disabled={connectedInputs.xPercent}
-            onChange={(event) => setNumericValue("xPercent", event.target.value, 0)}
+            onChange={(event) =>
+              setNumericValue("xPercent", event.target.value, 0)
+            }
             className={`w-full rounded-md border px-3 py-2 text-sm focus:outline-none ${
               connectedInputs.xPercent
                 ? "cursor-not-allowed border-zinc-800 bg-zinc-800 text-zinc-500"
@@ -127,7 +132,9 @@ export default function CropImageNode({ id, data }: NodeProps<CropImageNodeData>
             type="number"
             value={yPercent}
             disabled={connectedInputs.yPercent}
-            onChange={(event) => setNumericValue("yPercent", event.target.value, 0)}
+            onChange={(event) =>
+              setNumericValue("yPercent", event.target.value, 0)
+            }
             className={`w-full rounded-md border px-3 py-2 text-sm focus:outline-none ${
               connectedInputs.yPercent
                 ? "cursor-not-allowed border-zinc-800 bg-zinc-800 text-zinc-500"
@@ -137,7 +144,9 @@ export default function CropImageNode({ id, data }: NodeProps<CropImageNodeData>
         </div>
 
         <div>
-          <label className="mb-1 block text-xs text-zinc-400">width_percent</label>
+          <label className="mb-1 block text-xs text-zinc-400">
+            width_percent
+          </label>
           <Handle
             id="width_percent"
             type="target"
@@ -161,7 +170,9 @@ export default function CropImageNode({ id, data }: NodeProps<CropImageNodeData>
         </div>
 
         <div>
-          <label className="mb-1 block text-xs text-zinc-400">height_percent</label>
+          <label className="mb-1 block text-xs text-zinc-400">
+            height_percent
+          </label>
           <Handle
             id="height_percent"
             type="target"

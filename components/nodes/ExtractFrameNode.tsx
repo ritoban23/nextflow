@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo } from "react";
 import { Clapperboard } from "lucide-react";
+import { useMemo } from "react";
 import {
   Handle,
   Position,
@@ -26,14 +26,17 @@ const handleStyle = {
 function hasIncomingConnection(
   edges: Edge[],
   nodeId: string,
-  handleId: string
+  handleId: string,
 ): boolean {
   return edges.some(
-    (edge) => edge.target === nodeId && edge.targetHandle === handleId
+    (edge) => edge.target === nodeId && edge.targetHandle === handleId,
   );
 }
 
-export default function ExtractFrameNode({ id, data }: NodeProps<ExtractFrameNodeData>) {
+export default function ExtractFrameNode({
+  id,
+  data,
+}: NodeProps<ExtractFrameNodeData>) {
   const edges = useEdges();
   const updateNode = useWorkflowStore((state) => state.updateNode);
 
@@ -42,7 +45,7 @@ export default function ExtractFrameNode({ id, data }: NodeProps<ExtractFrameNod
       videoUrl: hasIncomingConnection(edges, id, "video_url"),
       timestamp: hasIncomingConnection(edges, id, "timestamp"),
     }),
-    [edges, id]
+    [edges, id],
   );
 
   const timestamp = data?.timestamp ?? "0";

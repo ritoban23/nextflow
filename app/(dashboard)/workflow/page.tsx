@@ -1,7 +1,33 @@
 "use client";
 
+import { UserButton, useUser } from "@clerk/nextjs";
+import {
+  Check,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Circle,
+  Download,
+  Hand,
+  History,
+  Keyboard,
+  Moon,
+  PanelLeft,
+  Plus,
+  Save,
+  Scissors,
+  Send,
+  Sparkles,
+  Sun,
+  Upload,
+} from "lucide-react";
+import Image from "next/image";
+import type {
+  ChangeEvent,
+  DragEvent,
+  MouseEvent as ReactMouseEvent,
+} from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { ChangeEvent, DragEvent, MouseEvent as ReactMouseEvent } from "react";
 import {
   addEdge,
   applyEdgeChanges,
@@ -17,38 +43,16 @@ import {
   type NodeChange,
   type ReactFlowInstance,
 } from "reactflow";
-import {
-  Check,
-  Circle,
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
-  Download,
-  Hand,
-  History,
-  Keyboard,
-  Moon,
-  PanelLeft,
-  Plus,
-  Save,
-  Scissors,
-  Send,
-  Sparkles,
-  Sun,
-  Upload,
-} from "lucide-react";
-import { UserButton, useUser } from "@clerk/nextjs";
-import Image from "next/image";
 
-import { useWorkflowStore } from "@/lib/store";
+import CropImageNode from "@/components/nodes/CropImageNode";
+import ExtractFrameNode from "@/components/nodes/ExtractFrameNode";
+import LLMNode from "@/components/nodes/LLMNode";
 import TextNode from "@/components/nodes/TextNode";
 import UploadImageNode from "@/components/nodes/UploadImageNode";
 import UploadVideoNode from "@/components/nodes/UploadVideoNode";
-import LLMNode from "@/components/nodes/LLMNode";
-import CropImageNode from "@/components/nodes/CropImageNode";
-import ExtractFrameNode from "@/components/nodes/ExtractFrameNode";
-import WorkflowHistory from "@/components/WorkflowHistory";
 import { Button } from "@/components/ui/button";
+import WorkflowHistory from "@/components/WorkflowHistory";
+import { useWorkflowStore } from "@/lib/store";
 
 import "reactflow/dist/style.css";
 
@@ -187,15 +191,78 @@ function buildSampleWorkflow() {
   ];
 
   const edges: Edge[] = [
-    { id: "e1-2", source: "node-1", target: "node-2", targetHandle: "image_url", animated: true, style: { stroke: "#8b5cf6" } },
-    { id: "e3-5", source: "node-3", target: "node-5", targetHandle: "system_prompt", animated: true, style: { stroke: "#8b5cf6" } },
-    { id: "e4-5", source: "node-4", target: "node-5", targetHandle: "user_message", animated: true, style: { stroke: "#8b5cf6" } },
-    { id: "e2-5", source: "node-2", target: "node-5", targetHandle: "images", animated: true, style: { stroke: "#8b5cf6" } },
-    { id: "e6-7", source: "node-6", target: "node-7", targetHandle: "video_url", animated: true, style: { stroke: "#8b5cf6" } },
-    { id: "e8-9", source: "node-8", target: "node-9", targetHandle: "system_prompt", animated: true, style: { stroke: "#8b5cf6" } },
-    { id: "e5-9", source: "node-5", target: "node-9", targetHandle: "user_message", animated: true, style: { stroke: "#8b5cf6" } },
-    { id: "e2-9", source: "node-2", target: "node-9", targetHandle: "images", animated: true, style: { stroke: "#8b5cf6" } },
-    { id: "e7-9", source: "node-7", target: "node-9", targetHandle: "images", animated: true, style: { stroke: "#8b5cf6" } },
+    {
+      id: "e1-2",
+      source: "node-1",
+      target: "node-2",
+      targetHandle: "image_url",
+      animated: true,
+      style: { stroke: "#8b5cf6" },
+    },
+    {
+      id: "e3-5",
+      source: "node-3",
+      target: "node-5",
+      targetHandle: "system_prompt",
+      animated: true,
+      style: { stroke: "#8b5cf6" },
+    },
+    {
+      id: "e4-5",
+      source: "node-4",
+      target: "node-5",
+      targetHandle: "user_message",
+      animated: true,
+      style: { stroke: "#8b5cf6" },
+    },
+    {
+      id: "e2-5",
+      source: "node-2",
+      target: "node-5",
+      targetHandle: "images",
+      animated: true,
+      style: { stroke: "#8b5cf6" },
+    },
+    {
+      id: "e6-7",
+      source: "node-6",
+      target: "node-7",
+      targetHandle: "video_url",
+      animated: true,
+      style: { stroke: "#8b5cf6" },
+    },
+    {
+      id: "e8-9",
+      source: "node-8",
+      target: "node-9",
+      targetHandle: "system_prompt",
+      animated: true,
+      style: { stroke: "#8b5cf6" },
+    },
+    {
+      id: "e5-9",
+      source: "node-5",
+      target: "node-9",
+      targetHandle: "user_message",
+      animated: true,
+      style: { stroke: "#8b5cf6" },
+    },
+    {
+      id: "e2-9",
+      source: "node-2",
+      target: "node-9",
+      targetHandle: "images",
+      animated: true,
+      style: { stroke: "#8b5cf6" },
+    },
+    {
+      id: "e7-9",
+      source: "node-7",
+      target: "node-9",
+      targetHandle: "images",
+      animated: true,
+      style: { stroke: "#8b5cf6" },
+    },
   ];
 
   return { nodes, edges };
@@ -342,8 +409,10 @@ function WorkflowPageContent() {
   const sidebarResizeStartXRef = useRef(0);
   const sidebarResizeStartWidthRef = useRef(240);
   const isResizingSidebarRef = useRef(false);
-  const [reactFlowInstance, setReactFlowInstance] =
-    useState<ReactFlowInstance<Node, Edge> | null>(null);
+  const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance<
+    Node,
+    Edge
+  > | null>(null);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(240);
   const [workflowName, setWorkflowName] = useState("Untitled");
@@ -372,7 +441,9 @@ function WorkflowPageContent() {
   const addNode = useWorkflowStore((state) => state.addNode);
   const setEdges = useWorkflowStore((state) => state.setEdges);
   const setHistory = useWorkflowStore((state) => state.setHistory);
-  const workflowRunHistory = useWorkflowStore((state) => state.workflowRunHistory);
+  const workflowRunHistory = useWorkflowStore(
+    (state) => state.workflowRunHistory,
+  );
   const isRunning = useWorkflowStore((state) => state.isRunning);
   const setRunning = useWorkflowStore((state) => state.setRunning);
   const selectedNodes = useWorkflowStore((state) => state.selectedNodes);
@@ -414,7 +485,7 @@ function WorkflowPageContent() {
         if (normalizedConnection.source) {
           flashInvalidSourceHandle(
             normalizedConnection.source,
-            normalizedConnection.sourceHandle ?? null
+            normalizedConnection.sourceHandle ?? null,
           );
         }
         return;
@@ -424,7 +495,7 @@ function WorkflowPageContent() {
         if (normalizedConnection.source) {
           flashInvalidSourceHandle(
             normalizedConnection.source,
-            normalizedConnection.sourceHandle ?? null
+            normalizedConnection.sourceHandle ?? null,
           );
         }
         return;
@@ -438,14 +509,14 @@ function WorkflowPageContent() {
 
       setEdges(addEdge(nextEdge, edges));
     },
-    [edges, nodes, setEdges]
+    [edges, nodes, setEdges],
   );
 
   const onEdgesChange = useCallback(
     (changes: Parameters<typeof applyEdgeChanges>[0]) => {
       setEdges(applyEdgeChanges(changes, edges));
     },
-    [edges, setEdges]
+    [edges, setEdges],
   );
 
   const onNodesChange = useCallback(
@@ -453,7 +524,7 @@ function WorkflowPageContent() {
       const recordHistory = changes.some((change) => change.type !== "select");
       setNodes(applyNodeChanges(changes, nodes), { recordHistory });
     },
-    [nodes, setNodes]
+    [nodes, setNodes],
   );
 
   const onDragStart = useCallback(
@@ -461,7 +532,7 @@ function WorkflowPageContent() {
       event.dataTransfer.setData("nodeType", nodeType);
       event.dataTransfer.effectAllowed = "move";
     },
-    []
+    [],
   );
 
   const onDragOver = useCallback((event: DragEvent<HTMLDivElement>) => {
@@ -491,7 +562,7 @@ function WorkflowPageContent() {
         data: getNodeDefaultData(nodeType),
       });
     },
-    [addNode, reactFlowInstance]
+    [addNode, reactFlowInstance],
   );
 
   const addNodeToCanvasCenter = useCallback(
@@ -513,41 +584,47 @@ function WorkflowPageContent() {
         data: getNodeDefaultData(nodeType),
       });
     },
-    [addNode, reactFlowInstance]
+    [addNode, reactFlowInstance],
   );
 
-  const persistWorkflow = useCallback(async (nameOverride?: string) => {
-    if (isSaving) {
-      return workflowId;
-    }
-
-    setIsSaving(true);
-    try {
-      const response = await fetch("/api/workflows", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          id: workflowId ?? undefined,
-          name: nameOverride ?? workflowName ?? "Untitled",
-          nodes,
-          edges,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to save workflow");
+  const persistWorkflow = useCallback(
+    async (nameOverride?: string) => {
+      if (isSaving) {
+        return workflowId;
       }
 
-      const workflow = (await response.json()) as { id: string; name: string };
-      setWorkflowId(workflow.id);
-      setWorkflowName(workflow.name);
-      return workflow.id;
-    } finally {
-      setIsSaving(false);
-    }
-  }, [edges, isSaving, nodes, workflowId, workflowName]);
+      setIsSaving(true);
+      try {
+        const response = await fetch("/api/workflows", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            id: workflowId ?? undefined,
+            name: nameOverride ?? workflowName ?? "Untitled",
+            nodes,
+            edges,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to save workflow");
+        }
+
+        const workflow = (await response.json()) as {
+          id: string;
+          name: string;
+        };
+        setWorkflowId(workflow.id);
+        setWorkflowName(workflow.name);
+        return workflow.id;
+      } finally {
+        setIsSaving(false);
+      }
+    },
+    [edges, isSaving, nodes, workflowId, workflowName],
+  );
 
   const deleteSelectedNodes = useCallback(() => {
     const ids = [...selectedNodesRef.current];
@@ -569,8 +646,8 @@ function WorkflowPageContent() {
     setEdges(
       edges.filter(
         (edge) =>
-          !selectedSet.has(edge.source) && !selectedSet.has(edge.target)
-      )
+          !selectedSet.has(edge.source) && !selectedSet.has(edge.target),
+      ),
     );
   }, [edges, setEdges]);
 
@@ -613,7 +690,9 @@ function WorkflowPageContent() {
         const parsed = JSON.parse(raw) as { nodes?: Node[]; edges?: Edge[] };
 
         if (!Array.isArray(parsed.nodes) || !Array.isArray(parsed.edges)) {
-          throw new Error("Imported JSON must include nodes[] and edges[] arrays");
+          throw new Error(
+            "Imported JSON must include nodes[] and edges[] arrays",
+          );
         }
 
         setGraph({
@@ -626,20 +705,22 @@ function WorkflowPageContent() {
         window.alert(
           error instanceof Error
             ? error.message
-            : "Unable to import workflow JSON"
+            : "Unable to import workflow JSON",
         );
       } finally {
         event.target.value = "";
       }
     },
-    [setGraph, setSelectedNodes]
+    [setGraph, setSelectedNodes],
   );
 
   const fetchRunHistory = useCallback(
     async (targetWorkflowId: string) => {
       setHistoryLoading(true);
       try {
-        const response = await fetch(`/api/runs?workflowId=${targetWorkflowId}`);
+        const response = await fetch(
+          `/api/runs?workflowId=${targetWorkflowId}`,
+        );
         if (!response.ok) {
           throw new Error("Unable to load run history");
         }
@@ -650,7 +731,7 @@ function WorkflowPageContent() {
         setHistoryLoading(false);
       }
     },
-    [setHistory]
+    [setHistory],
   );
 
   const runWorkflow = useCallback(
@@ -682,7 +763,7 @@ function WorkflowPageContent() {
             },
           };
         }),
-        { recordHistory: false }
+        { recordHistory: false },
       );
 
       setRunning(true);
@@ -712,7 +793,7 @@ function WorkflowPageContent() {
         setRunning(false);
       }
     },
-    [fetchRunHistory, nodes, persistWorkflow, setNodes, setRunning]
+    [fetchRunHistory, nodes, persistWorkflow, setNodes, setRunning],
   );
 
   const onSelectionChange = useCallback(
@@ -721,7 +802,9 @@ function WorkflowPageContent() {
 
       if (
         nextSelectedIds.length === selectedNodesRef.current.length &&
-        nextSelectedIds.every((id, index) => id === selectedNodesRef.current[index])
+        nextSelectedIds.every(
+          (id, index) => id === selectedNodesRef.current[index],
+        )
       ) {
         return;
       }
@@ -729,7 +812,7 @@ function WorkflowPageContent() {
       selectedNodesRef.current = nextSelectedIds;
       setSelectedNodes(nextSelectedIds);
     },
-    [setSelectedNodes]
+    [setSelectedNodes],
   );
 
   useEffect(() => {
@@ -751,14 +834,16 @@ function WorkflowPageContent() {
     }
 
     const latestRun = [...workflowRunHistory].sort(
-      (a, b) => +new Date(b.startedAt) - +new Date(a.startedAt)
+      (a, b) => +new Date(b.startedAt) - +new Date(a.startedAt),
     )[0];
 
     if (!latestRun?.nodeRuns?.length) {
       return;
     }
 
-    const nodeRunByNodeId = new Map(latestRun.nodeRuns.map((nodeRun) => [nodeRun.nodeId, nodeRun]));
+    const nodeRunByNodeId = new Map(
+      latestRun.nodeRuns.map((nodeRun) => [nodeRun.nodeId, nodeRun]),
+    );
     let hasChanges = false;
 
     const nextNodes = nodes.map((node) => {
@@ -771,7 +856,9 @@ function WorkflowPageContent() {
       const nextIsRunning = nodeRun.status === "RUNNING";
       const nextIsComplete = nodeRun.status === "SUCCESS";
       const nextResult =
-        node.type === "llm" && nextIsComplete ? nodeRun.outputGenerated ?? null : null;
+        node.type === "llm" && nextIsComplete
+          ? (nodeRun.outputGenerated ?? null)
+          : null;
 
       const didChange =
         currentData.isRunning !== nextIsRunning ||
@@ -848,12 +935,15 @@ function WorkflowPageContent() {
     };
   }, [deleteSelectedNodes, redo, undo]);
 
-  const startSidebarResize = useCallback((event: ReactMouseEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    isResizingSidebarRef.current = true;
-    sidebarResizeStartXRef.current = event.clientX;
-    sidebarResizeStartWidthRef.current = sidebarWidth;
-  }, [sidebarWidth]);
+  const startSidebarResize = useCallback(
+    (event: ReactMouseEvent<HTMLDivElement>) => {
+      event.preventDefault();
+      isResizingSidebarRef.current = true;
+      sidebarResizeStartXRef.current = event.clientX;
+      sidebarResizeStartWidthRef.current = sidebarWidth;
+    },
+    [sidebarWidth],
+  );
 
   useEffect(() => {
     const handleMouseMove = (event: MouseEvent) => {
@@ -862,7 +952,10 @@ function WorkflowPageContent() {
       }
 
       const delta = event.clientX - sidebarResizeStartXRef.current;
-      const nextWidth = Math.min(420, Math.max(220, sidebarResizeStartWidthRef.current + delta));
+      const nextWidth = Math.min(
+        420,
+        Math.max(220, sidebarResizeStartWidthRef.current + delta),
+      );
       setSidebarWidth(nextWidth);
     };
 
@@ -920,18 +1013,22 @@ function WorkflowPageContent() {
   ];
 
   return (
-    <div className={`font-sans flex h-screen w-full overflow-hidden ${rootThemeClass}`}>
+    <div
+      className={`flex h-screen w-full overflow-hidden font-sans ${rootThemeClass}`}
+    >
       <aside
         style={{ width: isSidebarCollapsed ? 64 : sidebarWidth }}
         className={`relative flex h-full shrink-0 flex-col overflow-hidden border-r transition-[width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-[width] ${sidebarThemeClass}`}
       >
-        <div className={`flex items-center border-b p-3 ${isThemeDark ? "border-white/5" : "border-black/10"}`}>
+        <div
+          className={`flex items-center border-b p-3 ${isThemeDark ? "border-white/5" : "border-black/10"}`}
+        >
           <button
             data-slot="sidebar-trigger"
             data-sidebar="trigger"
             type="button"
             onClick={() => setIsSidebarCollapsed((prev) => !prev)}
-            className={`inline-flex size-9 shrink-0 items-center justify-center gap-2 rounded-md text-sm whitespace-nowrap transition-all outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 ${
+            className={`focus-visible:border-ring focus-visible:ring-ring/50 inline-flex size-9 shrink-0 items-center justify-center gap-2 rounded-md text-sm whitespace-nowrap transition-all outline-none focus-visible:ring-[3px] disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 ${
               isThemeDark
                 ? "text-zinc-300 hover:bg-white/10 hover:text-zinc-100"
                 : "text-zinc-700 hover:bg-black/5 hover:text-zinc-900"
@@ -954,9 +1051,9 @@ function WorkflowPageContent() {
                 : "translate-x-0 opacity-100"
             }`}
           >
-            <div className="px-3 pb-3 pt-3">
+            <div className="px-3 pt-3 pb-3">
               <h2
-                className={`mb-2 px-3 text-[11px] font-semibold uppercase tracking-[0.14em] ${
+                className={`mb-2 px-3 text-[11px] font-semibold tracking-[0.14em] uppercase ${
                   isThemeDark ? "text-zinc-500" : "text-zinc-600"
                 }`}
               >
@@ -1028,7 +1125,6 @@ function WorkflowPageContent() {
                 </div>
               </div>
             </div>
-
           </div>
 
           <div
@@ -1089,7 +1185,7 @@ function WorkflowPageContent() {
             aria-orientation="vertical"
             title="Drag to resize"
             onMouseDown={startSidebarResize}
-            className={`absolute right-0 top-0 h-full w-1.5 cursor-col-resize transition-colors ${
+            className={`absolute top-0 right-0 h-full w-1.5 cursor-col-resize transition-colors ${
               isThemeDark ? "hover:bg-white/10" : "hover:bg-black/10"
             }`}
           />
@@ -1100,7 +1196,7 @@ function WorkflowPageContent() {
         <div className="flex min-h-0 flex-1">
           <div
             ref={wrapperRef}
-            className={`relative h-full min-w-0 flex-1 w-full ${canvasThemeClass}`}
+            className={`relative h-full w-full min-w-0 flex-1 ${canvasThemeClass}`}
             style={{
               backgroundImage: canvasBackground,
             }}
@@ -1111,7 +1207,7 @@ function WorkflowPageContent() {
               setIsEditingWorkflowName(false);
             }}
           >
-            <div className="pointer-events-none absolute left-4 top-3 z-20">
+            <div className="pointer-events-none absolute top-3 left-4 z-20">
               <div className="relative">
                 <div
                   className={`pointer-events-auto inline-flex items-center gap-2 rounded-[20px] border px-3 py-2 text-left text-sm font-medium transition-colors ${
@@ -1167,12 +1263,14 @@ function WorkflowPageContent() {
                       {workflowName}
                     </Button>
                   )}
-                  <ChevronDown className={`h-4 w-4 ${isThemeDark ? "text-zinc-400" : "text-zinc-500"}`} />
+                  <ChevronDown
+                    className={`h-4 w-4 ${isThemeDark ? "text-zinc-400" : "text-zinc-500"}`}
+                  />
                 </div>
               </div>
             </div>
 
-            <div className="pointer-events-none absolute right-4 top-3 z-20 flex items-center gap-2">
+            <div className="pointer-events-none absolute top-3 right-4 z-20 flex items-center gap-2">
               <Button
                 variant="ghost"
                 size="icon-sm"
@@ -1199,7 +1297,9 @@ function WorkflowPageContent() {
                     : "border-black/10 bg-white/90 shadow-[0_8px_24px_rgba(15,23,42,0.14)]"
                 }`}
               >
-                <Download className={`h-4 w-4 ${isThemeDark ? "text-zinc-300" : "text-zinc-600"}`} />
+                <Download
+                  className={`h-4 w-4 ${isThemeDark ? "text-zinc-300" : "text-zinc-600"}`}
+                />
                 <Button
                   variant="ghost"
                   size="xs"
@@ -1213,8 +1313,14 @@ function WorkflowPageContent() {
                 >
                   Export JSON
                 </Button>
-                <span className={isThemeDark ? "text-zinc-700" : "text-zinc-400"}>|</span>
-                <Upload className={`h-4 w-4 ${isThemeDark ? "text-zinc-300" : "text-zinc-600"}`} />
+                <span
+                  className={isThemeDark ? "text-zinc-700" : "text-zinc-400"}
+                >
+                  |
+                </span>
+                <Upload
+                  className={`h-4 w-4 ${isThemeDark ? "text-zinc-300" : "text-zinc-600"}`}
+                />
                 <Button
                   variant="ghost"
                   size="xs"
@@ -1228,8 +1334,14 @@ function WorkflowPageContent() {
                 >
                   Import JSON
                 </Button>
-                <span className={isThemeDark ? "text-zinc-700" : "text-zinc-400"}>|</span>
-                <Check className={`h-4 w-4 ${isThemeDark ? "text-zinc-300" : "text-zinc-600"}`} />
+                <span
+                  className={isThemeDark ? "text-zinc-700" : "text-zinc-400"}
+                >
+                  |
+                </span>
+                <Check
+                  className={`h-4 w-4 ${isThemeDark ? "text-zinc-300" : "text-zinc-600"}`}
+                />
                 <Button
                   variant="ghost"
                   size="xs"
@@ -1252,7 +1364,9 @@ function WorkflowPageContent() {
                     : "border-black/10 bg-white/90 shadow-[0_8px_24px_rgba(15,23,42,0.14)]"
                 }`}
               >
-                <Save className={`h-4 w-4 ${isThemeDark ? "text-zinc-300" : "text-zinc-600"}`} />
+                <Save
+                  className={`h-4 w-4 ${isThemeDark ? "text-zinc-300" : "text-zinc-600"}`}
+                />
                 <Button
                   variant="ghost"
                   size="xs"
@@ -1269,8 +1383,14 @@ function WorkflowPageContent() {
                 >
                   {isSaving ? "Saving..." : "Save"}
                 </Button>
-                <span className={isThemeDark ? "text-zinc-700" : "text-zinc-400"}>|</span>
-                <Send className={`h-4 w-4 ${isThemeDark ? "text-zinc-300" : "text-zinc-600"}`} />
+                <span
+                  className={isThemeDark ? "text-zinc-700" : "text-zinc-400"}
+                >
+                  |
+                </span>
+                <Send
+                  className={`h-4 w-4 ${isThemeDark ? "text-zinc-300" : "text-zinc-600"}`}
+                />
                 <Button
                   variant="ghost"
                   size="xs"
@@ -1358,17 +1478,25 @@ function WorkflowPageContent() {
                 }}
                 nodeStrokeColor={isThemeDark ? "#555" : "#64748b"}
                 nodeColor={isThemeDark ? "#222" : "#dbe1ea"}
-                maskColor={isThemeDark ? "rgba(0, 0, 0, 0.25)" : "rgba(99, 114, 131, 0.18)"}
+                maskColor={
+                  isThemeDark
+                    ? "rgba(0, 0, 0, 0.25)"
+                    : "rgba(99, 114, 131, 0.18)"
+                }
               />
             </ReactFlow>
 
             {nodes.length === 0 ? (
               <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
                 <div className="-mt-12 text-center">
-                  <p className={`text-[16px] font-semibold tracking-[-0.01em] ${isThemeDark ? "text-zinc-300" : "text-zinc-700"}`}>
+                  <p
+                    className={`text-[16px] font-semibold tracking-[-0.01em] ${isThemeDark ? "text-zinc-300" : "text-zinc-700"}`}
+                  >
                     Add a node
                   </p>
-                  <p className={`mt-2 text-[14px] font-normal ${isThemeDark ? "text-zinc-500" : "text-zinc-600"}`}>
+                  <p
+                    className={`mt-2 text-[14px] font-normal ${isThemeDark ? "text-zinc-500" : "text-zinc-600"}`}
+                  >
                     Double click, right click, or press{" "}
                     <span
                       className={`inline-flex h-7 w-7 items-center justify-center rounded-md border text-[14px] font-medium ${
@@ -1428,7 +1556,7 @@ function WorkflowPageContent() {
                 className={`pointer-events-auto rounded-xl border px-3 py-2 disabled:opacity-50 ${
                   isThemeDark
                     ? "border-white/10 bg-[#262626]/80 text-zinc-200 hover:bg-[#2a2a2a]"
-                    : "border-black/10 bg-white/85 text-zinc-700 hover:bg-[#eef2f7] shadow-[0_8px_24px_rgba(15,23,42,0.14)]"
+                    : "border-black/10 bg-white/85 text-zinc-700 shadow-[0_8px_24px_rgba(15,23,42,0.14)] hover:bg-[#eef2f7]"
                 }`}
                 disabled={!canUndo}
                 onClick={undo}
@@ -1442,7 +1570,7 @@ function WorkflowPageContent() {
                 className={`pointer-events-auto rounded-xl border px-3 py-2 disabled:opacity-50 ${
                   isThemeDark
                     ? "border-white/10 bg-[#262626]/80 text-zinc-200 hover:bg-[#2a2a2a]"
-                    : "border-black/10 bg-white/85 text-zinc-700 hover:bg-[#eef2f7] shadow-[0_8px_24px_rgba(15,23,42,0.14)]"
+                    : "border-black/10 bg-white/85 text-zinc-700 shadow-[0_8px_24px_rgba(15,23,42,0.14)] hover:bg-[#eef2f7]"
                 }`}
                 disabled={!canRedo}
                 onClick={redo}
@@ -1456,7 +1584,7 @@ function WorkflowPageContent() {
                 className={`pointer-events-auto inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-xs ${
                   isThemeDark
                     ? "border-white/10 bg-[#262626]/80 text-zinc-100 hover:bg-[#2a2a2a]"
-                    : "border-black/10 bg-white/85 text-zinc-700 hover:bg-[#eef2f7] shadow-[0_8px_24px_rgba(15,23,42,0.14)]"
+                    : "border-black/10 bg-white/85 text-zinc-700 shadow-[0_8px_24px_rgba(15,23,42,0.14)] hover:bg-[#eef2f7]"
                 }`}
               >
                 <Keyboard className="h-4 w-4" />
@@ -1472,7 +1600,8 @@ function WorkflowPageContent() {
                     : "border-black/10 bg-white/85 shadow-[0_8px_24px_rgba(15,23,42,0.14)]"
                 }`}
               >
-                <Button variant="ghost"
+                <Button
+                  variant="ghost"
                   type="button"
                   title="New node"
                   className={`rounded-lg p-2 ${
@@ -1484,7 +1613,8 @@ function WorkflowPageContent() {
                 >
                   <Plus className="h-5 w-5" />
                 </Button>
-                <Button variant="ghost"
+                <Button
+                  variant="ghost"
                   type="button"
                   title="Draw selections"
                   className={`rounded-lg p-2 hover:bg-white/10 ${
@@ -1502,7 +1632,8 @@ function WorkflowPageContent() {
                 >
                   <Circle className="h-5 w-5" />
                 </Button>
-                <Button variant="ghost"
+                <Button
+                  variant="ghost"
                   type="button"
                   title="Pan"
                   onClick={() => setIsPanMode((prev) => !prev)}
@@ -1518,7 +1649,8 @@ function WorkflowPageContent() {
                 >
                   <Hand className="h-5 w-5" />
                 </Button>
-                <Button variant="ghost"
+                <Button
+                  variant="ghost"
                   type="button"
                   title="Cut connections"
                   className={`rounded-lg p-2 ${
@@ -1530,7 +1662,8 @@ function WorkflowPageContent() {
                 >
                   <Scissors className="h-5 w-5" />
                 </Button>
-                <Button variant="ghost"
+                <Button
+                  variant="ghost"
                   type="button"
                   title="Presets"
                   className={`rounded-lg p-2 ${
@@ -1550,7 +1683,7 @@ function WorkflowPageContent() {
             className={`shrink-0 overflow-hidden border-l transition-[width,padding,opacity] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${rightPanelThemeClass} ${
               isHistoryOpen
                 ? "w-[288px] p-4 opacity-100"
-                : "w-0 border-transparent p-0 opacity-0 pointer-events-none"
+                : "pointer-events-none w-0 border-transparent p-0 opacity-0"
             }`}
           >
             <div
@@ -1559,7 +1692,7 @@ function WorkflowPageContent() {
               }`}
             >
               <h2
-                className={`text-sm font-semibold uppercase tracking-[0.14em] ${
+                className={`text-sm font-semibold tracking-[0.14em] uppercase ${
                   isThemeDark ? "text-zinc-500" : "text-zinc-600"
                 }`}
               >
@@ -1586,7 +1719,8 @@ function WorkflowPageContent() {
                 }`}
               >
                 {selectedNodes.length > 0 ? (
-                  <Button variant="ghost"
+                  <Button
+                    variant="ghost"
                     type="button"
                     onClick={() => {
                       void runWorkflow("PARTIAL", selectedNodes);
@@ -1617,12 +1751,15 @@ function WorkflowPageContent() {
               >
                 <div className="mb-4 flex items-start justify-between gap-4">
                   <div>
-                    <h3 className="text-xl font-semibold text-zinc-100">Keyboard Shortcuts</h3>
+                    <h3 className="text-xl font-semibold text-zinc-100">
+                      Keyboard Shortcuts
+                    </h3>
                     <p className="mt-1 text-sm text-zinc-500">
                       Quickly navigate and create with these shortcuts.
                     </p>
                   </div>
-                  <Button variant="ghost"
+                  <Button
+                    variant="ghost"
                     type="button"
                     onClick={() => setIsShortcutsOpen(false)}
                     className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-[#171717] text-zinc-300 hover:bg-[#242424]"
@@ -1633,8 +1770,13 @@ function WorkflowPageContent() {
 
                 <div className="space-y-2">
                   {shortcutsRows.map((row) => (
-                    <div key={row.action} className="flex items-center justify-between rounded-md px-2 py-1.5">
-                      <span className="text-sm text-zinc-300">{row.action}</span>
+                    <div
+                      key={row.action}
+                      className="flex items-center justify-between rounded-md px-2 py-1.5"
+                    >
+                      <span className="text-sm text-zinc-300">
+                        {row.action}
+                      </span>
                       <span className="rounded-md border border-white/10 bg-[#171717] px-2 py-0.5 text-xs text-zinc-400">
                         {row.key}
                       </span>

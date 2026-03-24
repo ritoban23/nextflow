@@ -2,9 +2,9 @@ import { auth } from "@clerk/nextjs/server";
 import type { Edge, Node } from "reactflow";
 import { z } from "zod";
 
+import { executeWorkflow } from "@/lib/executeWorkflow";
 import { getCurrentDbUser } from "@/lib/getCurrentDbUser";
 import { prisma } from "@/lib/prisma";
-import { executeWorkflow } from "@/lib/executeWorkflow";
 
 const createRunSchema = z.object({
   workflowId: z.string().cuid(),
@@ -31,7 +31,7 @@ export async function POST(request: Request) {
         error: "Invalid request body",
         details: parsedBody.error.flatten(),
       },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -87,7 +87,7 @@ export async function POST(request: Request) {
       {
         error: "nodeIds are required for PARTIAL or SINGLE run scope",
       },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -136,7 +136,7 @@ export async function GET(request: Request) {
         error: "Invalid query string",
         details: parsedQuery.error.flatten(),
       },
-      { status: 400 }
+      { status: 400 },
     );
   }
 

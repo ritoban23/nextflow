@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
 import { Bot, Loader2 } from "lucide-react";
+import { useMemo, useState } from "react";
 import {
   Handle,
   Position,
@@ -10,8 +10,8 @@ import {
   type NodeProps,
 } from "reactflow";
 
-import { useWorkflowStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
+import { useWorkflowStore } from "@/lib/store";
 
 type LLMNodeData = {
   model?:
@@ -45,10 +45,10 @@ const MODELS = [
 function hasIncomingConnection(
   edges: Edge[],
   nodeId: string,
-  handleId: string
+  handleId: string,
 ): boolean {
   return edges.some(
-    (edge) => edge.target === nodeId && edge.targetHandle === handleId
+    (edge) => edge.target === nodeId && edge.targetHandle === handleId,
   );
 }
 
@@ -64,14 +64,15 @@ export default function LLMNode({ id, data }: NodeProps<LLMNodeData>) {
   const output = data?.output ?? "";
   const inlineResult = result ?? output;
   const isComplete = Boolean(data?.isComplete) || Boolean(inlineResult);
-  const isRunning = Boolean(data?.isRunning) || Boolean(data?.running) || isSimulatingRun;
+  const isRunning =
+    Boolean(data?.isRunning) || Boolean(data?.running) || isSimulatingRun;
 
   const disabledByConnection = useMemo(
     () => ({
       systemPrompt: hasIncomingConnection(edges, id, "system_prompt"),
       userMessage: hasIncomingConnection(edges, id, "user_message"),
     }),
-    [edges, id]
+    [edges, id],
   );
 
   const runNode = () => {
@@ -145,7 +146,9 @@ export default function LLMNode({ id, data }: NodeProps<LLMNodeData>) {
 
       <div className="space-y-2">
         <div>
-          <label className="mb-1 block text-xs text-zinc-400">system_prompt</label>
+          <label className="mb-1 block text-xs text-zinc-400">
+            system_prompt
+          </label>
           <Handle
             id="system_prompt"
             type="target"
@@ -173,7 +176,9 @@ export default function LLMNode({ id, data }: NodeProps<LLMNodeData>) {
         </div>
 
         <div>
-          <label className="mb-1 block text-xs text-zinc-400">user_message</label>
+          <label className="mb-1 block text-xs text-zinc-400">
+            user_message
+          </label>
           <Handle
             id="user_message"
             type="target"
@@ -230,7 +235,7 @@ export default function LLMNode({ id, data }: NodeProps<LLMNodeData>) {
         type="button"
         onClick={runNode}
         disabled={isRunning}
-        className="mt-3 h-auto inline-flex items-center gap-2 rounded-md border border-white/10 bg-[#171717] px-3 py-1.5 text-sm font-medium text-zinc-100 hover:bg-[#222] disabled:cursor-not-allowed disabled:opacity-70"
+        className="mt-3 inline-flex h-auto items-center gap-2 rounded-md border border-white/10 bg-[#171717] px-3 py-1.5 text-sm font-medium text-zinc-100 hover:bg-[#222] disabled:cursor-not-allowed disabled:opacity-70"
       >
         {isRunning ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
         Run Node
@@ -238,7 +243,9 @@ export default function LLMNode({ id, data }: NodeProps<LLMNodeData>) {
 
       {isComplete && inlineResult ? (
         <div className="mt-3 rounded-md border border-white/10 bg-[#111] p-2">
-          <p className="mb-1 text-[10px] uppercase tracking-wide text-zinc-500">Result</p>
+          <p className="mb-1 text-[10px] tracking-wide text-zinc-500 uppercase">
+            Result
+          </p>
           <div className="max-h-28 overflow-y-auto rounded border border-white/10 bg-[#161616] p-2 text-xs leading-relaxed text-zinc-200">
             {inlineResult}
           </div>

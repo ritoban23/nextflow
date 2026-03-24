@@ -1,0 +1,14 @@
+node_modules
+.next
+out
+coverage
+build
+dist
+
+# Generated artifacts
+generated/**
+
+# Agent/instruction docs managed outside app runtime
+AGENTS.md
+CLAUDE.md
+.github/instructions/**

@@ -1,8 +1,8 @@
+import { spawn } from "node:child_process";
 import { createHmac } from "node:crypto";
 import { promises as fs } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { spawn } from "node:child_process";
 
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { task } from "@trigger.dev/sdk";
@@ -17,7 +17,7 @@ type TaskNodeContext = {
 async function updateNodeRunSuccess(
   context: TaskNodeContext,
   output: string,
-  executionTime: number
+  executionTime: number,
 ) {
   await prisma.nodeRun.updateMany({
     where: {
@@ -36,7 +36,7 @@ async function updateNodeRunSuccess(
 async function updateNodeRunFailure(
   context: TaskNodeContext,
   error: unknown,
-  executionTime: number
+  executionTime: number,
 ) {
   await prisma.nodeRun.updateMany({
     where: {
@@ -74,7 +74,7 @@ async function downloadToTempFile(url: string, extension: string) {
   const buffer = Buffer.from(await response.arrayBuffer());
   const tempFile = join(
     tmpdir(),
-    `nextflow-${Date.now()}-${Math.random().toString(36).slice(2)}.${extension}`
+    `nextflow-${Date.now()}-${Math.random().toString(36).slice(2)}.${extension}`,
   );
   await fs.writeFile(tempFile, buffer);
   return tempFile;
@@ -176,7 +176,11 @@ async function uploadFileToTransloadit(filePath: string, contentType: string) {
   }
 
   const fileBuffer = await fs.readFile(filePath);
-  formData.append("file", new Blob([fileBuffer], { type: contentType }), "asset.bin");
+  formData.append(
+    "file",
+    new Blob([fileBuffer], { type: contentType }),
+    "asset.bin",
+  );
 
   const response = await fetch("https://api2.transloadit.com/assemblies", {
     method: "POST",
@@ -196,14 +200,17 @@ async function uploadFileToTransloadit(filePath: string, contentType: string) {
   };
 
   if (assembly.ok === "ASSEMBLY_COMPLETED") {
-    const directUrl = assembly.uploads?.[0]?.ssl_url ?? assembly.uploads?.[0]?.url;
+    const directUrl =
+      assembly.uploads?.[0]?.ssl_url ?? assembly.uploads?.[0]?.url;
     if (directUrl) {
       return directUrl;
     }
   }
 
   if (!assembly.assembly_id) {
-    throw new Error(assembly.error ?? "Transloadit did not return an assembly id");
+    throw new Error(
+      assembly.error ?? "Transloadit did not return an assembly id",
+    );
   }
 
   const statusUrl = `https://api2.transloadit.com/assemblies/${assembly.assembly_id}`;
@@ -213,7 +220,9 @@ async function uploadFileToTransloadit(filePath: string, contentType: string) {
 
     const statusResponse = await fetch(statusUrl);
     if (!statusResponse.ok) {
-      throw new Error(`Transloadit status check failed: ${statusResponse.status}`);
+      throw new Error(
+        `Transloadit status check failed: ${statusResponse.status}`,
+      );
     }
 
     const statusJson = (await statusResponse.json()) as {
@@ -228,7 +237,9 @@ async function uploadFileToTransloadit(filePath: string, contentType: string) {
     }
 
     if (statusJson.ok === "ASSEMBLY_COMPLETED") {
-      const resultGroups = statusJson.results ? Object.values(statusJson.results) : [];
+      const resultGroups = statusJson.results
+        ? Object.values(statusJson.results)
+        : [];
       for (const group of resultGroups) {
         const url = group[0]?.ssl_url ?? group[0]?.url;
         if (url) {
@@ -236,7 +247,8 @@ async function uploadFileToTransloadit(filePath: string, contentType: string) {
         }
       }
 
-      const uploadUrl = statusJson.uploads?.[0]?.ssl_url ?? statusJson.uploads?.[0]?.url;
+      const uploadUrl =
+        statusJson.uploads?.[0]?.ssl_url ?? statusJson.uploads?.[0]?.url;
       if (uploadUrl) {
         return uploadUrl;
       }
@@ -250,7 +262,10 @@ async function uploadFileToTransloadit(filePath: string, contentType: string) {
   throw new Error("Timed out waiting for Transloadit assembly completion");
 }
 
-function parseTimestampToSeconds(timestamp: string, videoDurationSeconds: number) {
+function parseTimestampToSeconds(
+  timestamp: string,
+  videoDurationSeconds: number,
+) {
   const trimmed = timestamp.trim();
 
   if (trimmed.endsWith("%")) {
@@ -310,7 +325,9 @@ export const llmTask = task({
             throw new Error(`Unable to fetch image: ${response.status}`);
           }
 
-          const bytes = Buffer.from(await response.arrayBuffer()).toString("base64");
+          const bytes = Buffer.from(await response.arrayBuffer()).toString(
+            "base64",
+          );
           const mimeType = response.headers.get("content-type") ?? "image/jpeg";
 
           return {
@@ -319,7 +336,7 @@ export const llmTask = task({
               mimeType,
             },
           };
-        })
+        }),
       );
 
       const promptText = payload.systemPrompt?.trim()
@@ -335,7 +352,7 @@ export const llmTask = task({
           nodeId: payload.nodeId,
         },
         output,
-        Date.now() - startedAt
+        Date.now() - startedAt,
       );
 
       return { output };
@@ -346,7 +363,7 @@ export const llmTask = task({
           nodeId: payload.nodeId,
         },
         error,
-        Date.now() - startedAt
+        Date.now() - startedAt,
       );
       throw error;
     }
@@ -373,7 +390,7 @@ export const cropImageTask = task({
       inputPath = await downloadToTempFile(payload.imageUrl, inputExt);
       outputPath = join(
         tmpdir(),
-        `nextflow-cropped-${Date.now()}-${Math.random().toString(36).slice(2)}.jpg`
+        `nextflow-cropped-${Date.now()}-${Math.random().toString(36).slice(2)}.jpg`,
       );
 
       const cropFilter = `crop=iw*(${payload.widthPercent}/100):ih*(${payload.heightPercent}/100):iw*(${payload.xPercent}/100):ih*(${payload.yPercent}/100)`;
@@ -395,7 +412,7 @@ export const cropImageTask = task({
           nodeId: payload.nodeId,
         },
         output,
-        Date.now() - startedAt
+        Date.now() - startedAt,
       );
 
       return { output };
@@ -406,7 +423,7 @@ export const cropImageTask = task({
           nodeId: payload.nodeId,
         },
         error,
-        Date.now() - startedAt
+        Date.now() - startedAt,
       );
       throw error;
     } finally {
@@ -437,11 +454,14 @@ export const extractFrameTask = task({
       videoPath = await downloadToTempFile(payload.videoUrl, inputExt);
       framePath = join(
         tmpdir(),
-        `nextflow-frame-${Date.now()}-${Math.random().toString(36).slice(2)}.jpg`
+        `nextflow-frame-${Date.now()}-${Math.random().toString(36).slice(2)}.jpg`,
       );
 
       const duration = await getVideoDurationInSeconds(videoPath);
-      const timestampSeconds = parseTimestampToSeconds(payload.timestamp, duration);
+      const timestampSeconds = parseTimestampToSeconds(
+        payload.timestamp,
+        duration,
+      );
 
       await runCommand("ffmpeg", [
         "-y",
@@ -462,7 +482,7 @@ export const extractFrameTask = task({
           nodeId: payload.nodeId,
         },
         output,
-        Date.now() - startedAt
+        Date.now() - startedAt,
       );
 
       return { output };
@@ -473,7 +493,7 @@ export const extractFrameTask = task({
           nodeId: payload.nodeId,
         },
         error,
-        Date.now() - startedAt
+        Date.now() - startedAt,
       );
       throw error;
     } finally {

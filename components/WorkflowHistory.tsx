@@ -1,11 +1,17 @@
 "use client";
 
+import {
+  CheckCircle2,
+  ChevronDown,
+  ChevronRight,
+  CircleX,
+  Loader2,
+} from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, ChevronDown, ChevronRight, CircleX, Loader2 } from "lucide-react";
 
-import type { NodeRun, WorkflowRun } from "@/lib/store";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import type { NodeRun, WorkflowRun } from "@/lib/store";
 
 type WorkflowHistoryProps = {
   runs: WorkflowRun[];
@@ -65,7 +71,10 @@ function formatTimestamp(value: string) {
   }).format(date);
 }
 
-function statusBadgeClasses(status: WorkflowRun["status"], isThemeDark: boolean) {
+function statusBadgeClasses(
+  status: WorkflowRun["status"],
+  isThemeDark: boolean,
+) {
   if (status === "SUCCESS") {
     return isThemeDark
       ? "border-emerald-500/30 bg-emerald-500/15 text-emerald-200"
@@ -131,17 +140,25 @@ function NodeRunStatusIcon({ status }: { status: NodeRun["status"] }) {
   return <Loader2 className="h-3.5 w-3.5 animate-spin text-yellow-400" />;
 }
 
-export default function WorkflowHistory({ runs, isLoading, isThemeDark = true, onRefresh }: WorkflowHistoryProps) {
-  const [expandedRunIds, setExpandedRunIds] = useState<Record<string, boolean>>({});
+export default function WorkflowHistory({
+  runs,
+  isLoading,
+  isThemeDark = true,
+  onRefresh,
+}: WorkflowHistoryProps) {
+  const [expandedRunIds, setExpandedRunIds] = useState<Record<string, boolean>>(
+    {},
+  );
 
   const sortedRuns = useMemo(
-    () => [...runs].sort((a, b) => +new Date(b.startedAt) - +new Date(a.startedAt)),
-    [runs]
+    () =>
+      [...runs].sort((a, b) => +new Date(b.startedAt) - +new Date(a.startedAt)),
+    [runs],
   );
 
   const hasRunningRun = useMemo(
     () => sortedRuns.some((run) => run.status === "RUNNING"),
-    [sortedRuns]
+    [sortedRuns],
   );
 
   useEffect(() => {
@@ -218,17 +235,25 @@ export default function WorkflowHistory({ runs, isLoading, isThemeDark = true, o
             >
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <p className={`text-sm font-semibold ${isThemeDark ? "text-zinc-100" : "text-zinc-800"}`}>
+                  <p
+                    className={`text-sm font-semibold ${isThemeDark ? "text-zinc-100" : "text-zinc-800"}`}
+                  >
                     Run #{runNumber}
                   </p>
-                  <p className={`mt-0.5 text-xs ${isThemeDark ? "text-zinc-400" : "text-zinc-500"}`}>
+                  <p
+                    className={`mt-0.5 text-xs ${isThemeDark ? "text-zinc-400" : "text-zinc-500"}`}
+                  >
                     {formatTimestamp(run.startedAt)}
                   </p>
                 </div>
                 {isExpanded ? (
-                  <ChevronDown className={`mt-0.5 h-4 w-4 ${isThemeDark ? "text-zinc-400" : "text-zinc-500"}`} />
+                  <ChevronDown
+                    className={`mt-0.5 h-4 w-4 ${isThemeDark ? "text-zinc-400" : "text-zinc-500"}`}
+                  />
                 ) : (
-                  <ChevronRight className={`mt-0.5 h-4 w-4 ${isThemeDark ? "text-zinc-400" : "text-zinc-500"}`} />
+                  <ChevronRight
+                    className={`mt-0.5 h-4 w-4 ${isThemeDark ? "text-zinc-400" : "text-zinc-500"}`}
+                  />
                 )}
               </div>
 
@@ -245,7 +270,11 @@ export default function WorkflowHistory({ runs, isLoading, isThemeDark = true, o
                 >
                   {formatStatus(run.status)}
                 </Badge>
-                <span className={isThemeDark ? "text-zinc-500" : "text-zinc-600"}>{formatDuration(run.duration)}</span>
+                <span
+                  className={isThemeDark ? "text-zinc-500" : "text-zinc-600"}
+                >
+                  {formatDuration(run.duration)}
+                </span>
               </div>
             </Button>
 
@@ -256,7 +285,9 @@ export default function WorkflowHistory({ runs, isLoading, isThemeDark = true, o
                 }`}
               >
                 {(run.nodeRuns ?? []).length === 0 ? (
-                  <p className={`text-xs ${isThemeDark ? "text-zinc-500" : "text-zinc-600"}`}>
+                  <p
+                    className={`text-xs ${isThemeDark ? "text-zinc-500" : "text-zinc-600"}`}
+                  >
                     No node-level data.
                   </p>
                 ) : (
@@ -271,23 +302,33 @@ export default function WorkflowHistory({ runs, isLoading, isThemeDark = true, o
                         }`}
                       >
                         <div className="flex items-center justify-between gap-2 text-xs">
-                          <div className={`flex items-center gap-2 ${isThemeDark ? "text-zinc-200" : "text-zinc-700"}`}>
+                          <div
+                            className={`flex items-center gap-2 ${isThemeDark ? "text-zinc-200" : "text-zinc-700"}`}
+                          >
                             <NodeRunStatusIcon status={nodeRun.status} />
                             <span>
                               {nodeRun.nodeType} ({nodeRun.nodeId})
                             </span>
                           </div>
-                          <span className={isThemeDark ? "text-zinc-500" : "text-zinc-500"}>
+                          <span
+                            className={
+                              isThemeDark ? "text-zinc-500" : "text-zinc-500"
+                            }
+                          >
                             {formatDuration(nodeRun.executionTime)}
                           </span>
                         </div>
 
                         {nodeRun.error ? (
-                          <p className={`mt-1 text-xs ${isThemeDark ? "text-red-300" : "text-red-600"}`}>
+                          <p
+                            className={`mt-1 text-xs ${isThemeDark ? "text-red-300" : "text-red-600"}`}
+                          >
                             Error: {nodeRun.error}
                           </p>
                         ) : nodeRun.outputGenerated ? (
-                          <p className={`mt-1 text-xs ${isThemeDark ? "text-zinc-400" : "text-zinc-600"}`}>
+                          <p
+                            className={`mt-1 text-xs ${isThemeDark ? "text-zinc-400" : "text-zinc-600"}`}
+                          >
                             Output: {truncateText(nodeRun.outputGenerated)}
                           </p>
                         ) : null}

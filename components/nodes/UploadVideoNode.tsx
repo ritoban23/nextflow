@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
 import { Video } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { Handle, Position, type NodeProps } from "reactflow";
 
 import { useWorkflowStore } from "@/lib/store";
@@ -62,7 +62,10 @@ function getResultUrl(assembly: unknown): string | null {
   );
 }
 
-export default function UploadVideoNode({ id, data }: NodeProps<UploadVideoNodeData>) {
+export default function UploadVideoNode({
+  id,
+  data,
+}: NodeProps<UploadVideoNodeData>) {
   const updateNode = useWorkflowStore((state) => state.updateNode);
   const uppyRef = useRef<UppyLike | null>(null);
   const dataRef = useRef<UploadVideoNodeData>(data ?? {});
@@ -89,7 +92,10 @@ export default function UploadVideoNode({ id, data }: NodeProps<UploadVideoNodeD
 
       try {
         const [{ default: UppyCore }, { default: TransloaditPlugin }] =
-          await Promise.all([import("@uppy/core"), import("@uppy/transloadit")]);
+          await Promise.all([
+            import("@uppy/core"),
+            import("@uppy/transloadit"),
+          ]);
 
         if (disposed) {
           return;
@@ -233,7 +239,9 @@ export default function UploadVideoNode({ id, data }: NodeProps<UploadVideoNodeD
         </label>
       ) : (
         <p className="text-xs text-zinc-400">
-          {isInitializing ? "Initializing uploader..." : "Uploader unavailable."}
+          {isInitializing
+            ? "Initializing uploader..."
+            : "Uploader unavailable."}
         </p>
       )}
 

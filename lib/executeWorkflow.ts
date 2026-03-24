@@ -1,5 +1,5 @@
-import { runs, tasks } from "@trigger.dev/sdk";
 import type { InputJsonValue } from "@prisma/client/runtime/client";
+import { runs, tasks } from "@trigger.dev/sdk";
 import type { Edge, Node } from "reactflow";
 
 import { prisma } from "@/lib/prisma";
@@ -33,7 +33,9 @@ function resolveAppBaseUrl() {
 
   const vercelUrl = process.env.VERCEL_URL?.trim();
   if (vercelUrl) {
-    const normalized = vercelUrl.startsWith("http") ? vercelUrl : `https://${vercelUrl}`;
+    const normalized = vercelUrl.startsWith("http")
+      ? vercelUrl
+      : `https://${vercelUrl}`;
     return normalized.replace(/\/$/, "");
   }
 
@@ -43,7 +45,7 @@ function resolveAppBaseUrl() {
 async function finalizeWorkflowRunStatus(
   workflowRunId: string,
   status: FinalRunStatus,
-  duration: number
+  duration: number,
 ) {
   const completedAt = new Date();
   const baseUrl = resolveAppBaseUrl();
@@ -83,7 +85,7 @@ function collectNodeIdsForScope(
   scope: RunScope,
   nodes: Node[],
   edges: Edge[],
-  selectedNodeIds?: string[]
+  selectedNodeIds?: string[],
 ): Set<string> {
   const allNodeIds = new Set(nodes.map((node) => node.id));
 
@@ -215,7 +217,7 @@ async function executeNode(
   node: Node,
   incomingEdges: Edge[],
   outputByNodeId: Map<string, string>,
-  workflowRunId: string
+  workflowRunId: string,
 ): Promise<NodeExecutionResult> {
   const startedAt = Date.now();
 
@@ -304,9 +306,11 @@ async function executeNode(
     if (type === "llm") {
       const model = parseStringInput(nodeData.model, "gemini-2.5-flash");
       const systemPrompt =
-        inputByHandle.get("system_prompt")?.[0] ?? parseStringInput(nodeData.systemPrompt, "");
+        inputByHandle.get("system_prompt")?.[0] ??
+        parseStringInput(nodeData.systemPrompt, "");
       const userMessage =
-        inputByHandle.get("user_message")?.[0] ?? parseStringInput(nodeData.userMessage, "");
+        inputByHandle.get("user_message")?.[0] ??
+        parseStringInput(nodeData.userMessage, "");
       const imageUrls = inputByHandle.get("images") ?? [];
 
       if (!userMessage.trim()) {
@@ -337,12 +341,17 @@ async function executeNode(
         },
       });
 
-      return { nodeId: node.id, status: "SUCCESS", output: taskRun.output.output };
+      return {
+        nodeId: node.id,
+        status: "SUCCESS",
+        output: taskRun.output.output,
+      };
     }
 
     if (type === "cropImage") {
       const imageUrl =
-        inputByHandle.get("image_url")?.[0] ?? parseStringInput(nodeData.imageUrl, "");
+        inputByHandle.get("image_url")?.[0] ??
+        parseStringInput(nodeData.imageUrl, "");
       if (!imageUrl) {
         throw new Error("Crop Image node requires image_url input");
       }
@@ -351,19 +360,19 @@ async function executeNode(
         imageUrl,
         xPercent: parseNumberInput(
           inputByHandle.get("x_percent")?.[0] ?? nodeData.xPercent,
-          0
+          0,
         ),
         yPercent: parseNumberInput(
           inputByHandle.get("y_percent")?.[0] ?? nodeData.yPercent,
-          0
+          0,
         ),
         widthPercent: parseNumberInput(
           inputByHandle.get("width_percent")?.[0] ?? nodeData.widthPercent,
-          100
+          100,
         ),
         heightPercent: parseNumberInput(
           inputByHandle.get("height_percent")?.[0] ?? nodeData.heightPercent,
-          100
+          100,
         ),
         workflowRunId,
         nodeId: node.id,
@@ -384,18 +393,24 @@ async function executeNode(
         },
       });
 
-      return { nodeId: node.id, status: "SUCCESS", output: taskRun.output.output };
+      return {
+        nodeId: node.id,
+        status: "SUCCESS",
+        output: taskRun.output.output,
+      };
     }
 
     if (type === "extractFrame") {
       const videoUrl =
-        inputByHandle.get("video_url")?.[0] ?? parseStringInput(nodeData.videoUrl, "");
+        inputByHandle.get("video_url")?.[0] ??
+        parseStringInput(nodeData.videoUrl, "");
       if (!videoUrl) {
         throw new Error("Extract Frame node requires video_url input");
       }
 
       const timestamp =
-        inputByHandle.get("timestamp")?.[0] ?? parseStringInput(nodeData.timestamp, "0");
+        inputByHandle.get("timestamp")?.[0] ??
+        parseStringInput(nodeData.timestamp, "0");
 
       const handle = await tasks.trigger("extract-frame-task", {
         videoUrl,
@@ -419,12 +434,17 @@ async function executeNode(
         },
       });
 
-      return { nodeId: node.id, status: "SUCCESS", output: taskRun.output.output };
+      return {
+        nodeId: node.id,
+        status: "SUCCESS",
+        output: taskRun.output.output,
+      };
     }
 
     throw new Error(`Unsupported node type: ${type}`);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown execution error";
+    const message =
+      error instanceof Error ? error.message : "Unknown execution error";
 
     await prisma.nodeRun.updateMany({
       where: { workflowRunId, nodeId: node.id },
@@ -449,7 +469,7 @@ export async function executeWorkflow(params: ExecuteWorkflowParams) {
     params.scope,
     params.nodes,
     params.edges,
-    params.selectedNodeIds
+    params.selectedNodeIds,
   );
 
   if (scopedNodeIds.size === 0) {
@@ -458,7 +478,7 @@ export async function executeWorkflow(params: ExecuteWorkflowParams) {
 
   const scopedNodes = params.nodes.filter((node) => scopedNodeIds.has(node.id));
   const scopedEdges = params.edges.filter(
-    (edge) => scopedNodeIds.has(edge.source) && scopedNodeIds.has(edge.target)
+    (edge) => scopedNodeIds.has(edge.source) && scopedNodeIds.has(edge.target),
   );
 
   const workflowRun = params.workflowRunId
@@ -498,9 +518,11 @@ export async function executeWorkflow(params: ExecuteWorkflowParams) {
             };
           }
 
-          const incoming = scopedEdges.filter((edge) => edge.target === node.id);
+          const incoming = scopedEdges.filter(
+            (edge) => edge.target === node.id,
+          );
           const dependenciesFailed = incoming.some(
-            (edge) => !outputByNodeId.has(edge.source)
+            (edge) => !outputByNodeId.has(edge.source),
           );
 
           if (dependenciesFailed) {
@@ -528,7 +550,7 @@ export async function executeWorkflow(params: ExecuteWorkflowParams) {
           }
 
           return executeNode(node, incoming, outputByNodeId, workflowRun.id);
-        })
+        }),
       );
 
       for (const result of levelResults) {
@@ -543,13 +565,25 @@ export async function executeWorkflow(params: ExecuteWorkflowParams) {
     const failedNodes = totalNodes - successfulNodes;
 
     const status =
-      failedNodes === 0 ? "SUCCESS" : successfulNodes === 0 ? "FAILED" : "PARTIAL";
+      failedNodes === 0
+        ? "SUCCESS"
+        : successfulNodes === 0
+          ? "FAILED"
+          : "PARTIAL";
 
-    await finalizeWorkflowRunStatus(workflowRun.id, status, Date.now() - runStartedAt);
+    await finalizeWorkflowRunStatus(
+      workflowRun.id,
+      status,
+      Date.now() - runStartedAt,
+    );
 
     return { workflowRunId: workflowRun.id, status };
   } catch (error) {
-    await finalizeWorkflowRunStatus(workflowRun.id, "FAILED", Date.now() - runStartedAt);
+    await finalizeWorkflowRunStatus(
+      workflowRun.id,
+      "FAILED",
+      Date.now() - runStartedAt,
+    );
 
     throw error;
   }

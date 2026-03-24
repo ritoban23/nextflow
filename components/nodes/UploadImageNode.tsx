@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import Image from "next/image";
 import { ImagePlus } from "lucide-react";
+import Image from "next/image";
+import { useEffect, useRef, useState } from "react";
 import { Handle, Position, type NodeProps } from "reactflow";
 
 import { useWorkflowStore } from "@/lib/store";
@@ -63,7 +63,10 @@ function getResultUrl(assembly: unknown): string | null {
   );
 }
 
-export default function UploadImageNode({ id, data }: NodeProps<UploadImageNodeData>) {
+export default function UploadImageNode({
+  id,
+  data,
+}: NodeProps<UploadImageNodeData>) {
   const updateNode = useWorkflowStore((state) => state.updateNode);
   const uppyRef = useRef<UppyLike | null>(null);
   const dataRef = useRef<UploadImageNodeData>(data ?? {});
@@ -90,7 +93,10 @@ export default function UploadImageNode({ id, data }: NodeProps<UploadImageNodeD
 
       try {
         const [{ default: UppyCore }, { default: TransloaditPlugin }] =
-          await Promise.all([import("@uppy/core"), import("@uppy/transloadit")]);
+          await Promise.all([
+            import("@uppy/core"),
+            import("@uppy/transloadit"),
+          ]);
 
         if (disposed) {
           return;
@@ -234,7 +240,9 @@ export default function UploadImageNode({ id, data }: NodeProps<UploadImageNodeD
         </label>
       ) : (
         <p className="text-xs text-zinc-400">
-          {isInitializing ? "Initializing uploader..." : "Uploader unavailable."}
+          {isInitializing
+            ? "Initializing uploader..."
+            : "Uploader unavailable."}
         </p>
       )}
 

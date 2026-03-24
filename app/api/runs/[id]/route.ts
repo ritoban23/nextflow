@@ -12,7 +12,7 @@ const patchRunSchema = z.object({
 
 export async function PATCH(
   request: Request,
-  context: { params: Promise<{ id: string }> }
+  context: { params: Promise<{ id: string }> },
 ) {
   const { id } = await context.params;
   const isInternalUpdate = request.headers.get("x-nextflow-internal") === "1";
@@ -41,7 +41,7 @@ export async function PATCH(
         error: "Invalid request body",
         details: parsedBody.error.flatten(),
       },
-      { status: 400 }
+      { status: 400 },
     );
   }
 

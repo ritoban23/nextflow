@@ -5,8 +5,5 @@ module.exports = {
   printWidth: 80,
   tabWidth: 2,
   bracketSpacing: true,
-  plugins: [
-    "prettier-plugin-organize-imports",
-    "prettier-plugin-tailwindcss",
-  ],
+  plugins: ["prettier-plugin-organize-imports", "prettier-plugin-tailwindcss"],
 };

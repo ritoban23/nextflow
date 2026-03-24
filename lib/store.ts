@@ -55,7 +55,7 @@ type WorkflowStore = {
   setNodes: (nodes: Node[], options?: { recordHistory?: boolean }) => void;
   setGraph: (
     graph: GraphState,
-    options?: { recordHistory?: boolean; clearFuture?: boolean }
+    options?: { recordHistory?: boolean; clearFuture?: boolean },
   ) => void;
   addNode: (node: Node) => void;
   updateNode: (nodeId: string, updates: Partial<Node>) => void;
@@ -104,11 +104,15 @@ export const useWorkflowStore = create<WorkflowStore>((set) => ({
       const clearFuture = options?.clearFuture ?? true;
 
       if (!recordHistory) {
-        const nextFuture = clearFuture ? [] : (state as WorkflowStore & { history: HistoryState }).history.future;
+        const nextFuture = clearFuture
+          ? []
+          : (state as WorkflowStore & { history: HistoryState }).history.future;
         return {
           nodes,
           edges,
-          canUndo: (state as WorkflowStore & { history: HistoryState }).history.past.length > 0,
+          canUndo:
+            (state as WorkflowStore & { history: HistoryState }).history.past
+              .length > 0,
           canRedo: nextFuture.length > 0,
           history: {
             ...(state as WorkflowStore & { history: HistoryState }).history,
@@ -119,7 +123,10 @@ export const useWorkflowStore = create<WorkflowStore>((set) => ({
 
       const currentState = state as WorkflowStore & { history: HistoryState };
       const currentSnapshot = captureSnapshot(state);
-      const nextPast = clampHistory([...currentState.history.past, currentSnapshot]);
+      const nextPast = clampHistory([
+        ...currentState.history.past,
+        currentSnapshot,
+      ]);
       const nextFuture = clearFuture ? [] : currentState.history.future;
 
       return {
@@ -145,7 +152,10 @@ export const useWorkflowStore = create<WorkflowStore>((set) => ({
         };
       }
 
-      const nextPast = clampHistory([...current.history.past, captureSnapshot(state)]);
+      const nextPast = clampHistory([
+        ...current.history.past,
+        captureSnapshot(state),
+      ]);
       return {
         nodes,
         canUndo: nextPast.length > 0,
@@ -158,43 +168,66 @@ export const useWorkflowStore = create<WorkflowStore>((set) => ({
     }),
 
   addNode: (node) =>
-    set((state) => ({
-      canUndo: true,
-      canRedo: false,
-      history: {
-        past: clampHistory([...(state as WorkflowStore & { history: HistoryState }).history.past, captureSnapshot(state)]),
-        future: [],
-      },
-      nodes: [...state.nodes, node],
-    }) as Partial<WorkflowStore & { history: HistoryState }>),
+    set(
+      (state) =>
+        ({
+          canUndo: true,
+          canRedo: false,
+          history: {
+            past: clampHistory([
+              ...(state as WorkflowStore & { history: HistoryState }).history
+                .past,
+              captureSnapshot(state),
+            ]),
+            future: [],
+          },
+          nodes: [...state.nodes, node],
+        }) as Partial<WorkflowStore & { history: HistoryState }>,
+    ),
 
   updateNode: (nodeId, updates) =>
-    set((state) => ({
-      canUndo: true,
-      canRedo: false,
-      history: {
-        past: clampHistory([...(state as WorkflowStore & { history: HistoryState }).history.past, captureSnapshot(state)]),
-        future: [],
-      },
-      nodes: state.nodes.map((node) =>
-        node.id === nodeId ? { ...node, ...updates } : node
-      ),
-    }) as Partial<WorkflowStore & { history: HistoryState }>),
+    set(
+      (state) =>
+        ({
+          canUndo: true,
+          canRedo: false,
+          history: {
+            past: clampHistory([
+              ...(state as WorkflowStore & { history: HistoryState }).history
+                .past,
+              captureSnapshot(state),
+            ]),
+            future: [],
+          },
+          nodes: state.nodes.map((node) =>
+            node.id === nodeId ? { ...node, ...updates } : node,
+          ),
+        }) as Partial<WorkflowStore & { history: HistoryState }>,
+    ),
 
   removeNode: (nodeId) =>
-    set((state) => ({
-      canUndo: true,
-      canRedo: false,
-      history: {
-        past: clampHistory([...(state as WorkflowStore & { history: HistoryState }).history.past, captureSnapshot(state)]),
-        future: [],
-      },
-      nodes: state.nodes.filter((node) => node.id !== nodeId),
-      edges: state.edges.filter(
-        (edge) => edge.source !== nodeId && edge.target !== nodeId
-      ),
-      selectedNodes: state.selectedNodes.filter((selectedId) => selectedId !== nodeId),
-    }) as Partial<WorkflowStore & { history: HistoryState }>),
+    set(
+      (state) =>
+        ({
+          canUndo: true,
+          canRedo: false,
+          history: {
+            past: clampHistory([
+              ...(state as WorkflowStore & { history: HistoryState }).history
+                .past,
+              captureSnapshot(state),
+            ]),
+            future: [],
+          },
+          nodes: state.nodes.filter((node) => node.id !== nodeId),
+          edges: state.edges.filter(
+            (edge) => edge.source !== nodeId && edge.target !== nodeId,
+          ),
+          selectedNodes: state.selectedNodes.filter(
+            (selectedId) => selectedId !== nodeId,
+          ),
+        }) as Partial<WorkflowStore & { history: HistoryState }>,
+    ),
 
   setEdges: (edges, options) =>
     set((state) => {
@@ -207,7 +240,10 @@ export const useWorkflowStore = create<WorkflowStore>((set) => ({
         };
       }
 
-      const nextPast = clampHistory([...current.history.past, captureSnapshot(state)]);
+      const nextPast = clampHistory([
+        ...current.history.past,
+        captureSnapshot(state),
+      ]);
       return {
         edges,
         canUndo: nextPast.length > 0,
@@ -267,7 +303,10 @@ export const useWorkflowStore = create<WorkflowStore>((set) => ({
 
       const next = current.history.future[0];
       const remainingFuture = current.history.future.slice(1);
-      const nextPast = clampHistory([...current.history.past, captureSnapshot(state)]);
+      const nextPast = clampHistory([
+        ...current.history.past,
+        captureSnapshot(state),
+      ]);
 
       return {
         nodes: next.nodes,

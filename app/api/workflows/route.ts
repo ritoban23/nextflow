@@ -1,8 +1,8 @@
 import { auth } from "@clerk/nextjs/server";
 import { z } from "zod";
 
-import { prisma } from "@/lib/prisma";
 import { getCurrentDbUser } from "@/lib/getCurrentDbUser";
+import { prisma } from "@/lib/prisma";
 
 const saveWorkflowSchema = z.object({
   id: z.string().cuid().optional(),
@@ -26,7 +26,7 @@ export async function POST(request: Request) {
         error: "Invalid request body",
         details: parsedBody.error.flatten(),
       },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
