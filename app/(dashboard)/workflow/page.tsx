@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { ChangeEvent, DragEvent } from "react";
+import type { ChangeEvent, DragEvent, MouseEvent as ReactMouseEvent } from "react";
 import {
   addEdge,
   applyEdgeChanges,
@@ -28,6 +28,7 @@ import {
   History,
   Keyboard,
   Moon,
+  PanelLeft,
   Plus,
   Save,
   Scissors,
@@ -47,6 +48,7 @@ import LLMNode from "@/components/nodes/LLMNode";
 import CropImageNode from "@/components/nodes/CropImageNode";
 import ExtractFrameNode from "@/components/nodes/ExtractFrameNode";
 import WorkflowHistory from "@/components/WorkflowHistory";
+import { Button } from "@/components/ui/button";
 
 import "reactflow/dist/style.css";
 
@@ -337,9 +339,13 @@ const nodeTypes = {
 
 function WorkflowPageContent() {
   const wrapperRef = useRef<HTMLDivElement | null>(null);
+  const sidebarResizeStartXRef = useRef(0);
+  const sidebarResizeStartWidthRef = useRef(240);
+  const isResizingSidebarRef = useRef(false);
   const [reactFlowInstance, setReactFlowInstance] =
     useState<ReactFlowInstance<Node, Edge> | null>(null);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [sidebarWidth, setSidebarWidth] = useState(240);
   const [workflowName, setWorkflowName] = useState("Untitled");
   const [workflowId, setWorkflowId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -842,7 +848,36 @@ function WorkflowPageContent() {
     };
   }, [deleteSelectedNodes, redo, undo]);
 
-  const sidebarWidthClass = isSidebarCollapsed ? "w-16" : "w-[240px]";
+  const startSidebarResize = useCallback((event: ReactMouseEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    isResizingSidebarRef.current = true;
+    sidebarResizeStartXRef.current = event.clientX;
+    sidebarResizeStartWidthRef.current = sidebarWidth;
+  }, [sidebarWidth]);
+
+  useEffect(() => {
+    const handleMouseMove = (event: MouseEvent) => {
+      if (!isResizingSidebarRef.current || isSidebarCollapsed) {
+        return;
+      }
+
+      const delta = event.clientX - sidebarResizeStartXRef.current;
+      const nextWidth = Math.min(420, Math.max(220, sidebarResizeStartWidthRef.current + delta));
+      setSidebarWidth(nextWidth);
+    };
+
+    const handleMouseUp = () => {
+      isResizingSidebarRef.current = false;
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [isSidebarCollapsed]);
 
   const filteredPalette = NODE_PALETTE;
 
@@ -885,35 +920,40 @@ function WorkflowPageContent() {
   ];
 
   return (
-    <div className={`flex h-screen w-full overflow-hidden ${rootThemeClass}`} style={{ fontFamily: "Manrope, Inter, Arial, sans-serif" }}>
+    <div className={`font-sans flex h-screen w-full overflow-hidden ${rootThemeClass}`}>
       <aside
-        className={`${sidebarWidthClass} flex h-full shrink-0 flex-col border-r transition-[width] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${sidebarThemeClass}`}
+        style={{ width: isSidebarCollapsed ? 64 : sidebarWidth }}
+        className={`relative flex h-full shrink-0 flex-col overflow-hidden border-r transition-[width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-[width] ${sidebarThemeClass}`}
       >
-        <div className={`flex items-center justify-between border-b p-3 ${isThemeDark ? "border-white/5" : "border-black/10"}`}>
-          {!isSidebarCollapsed ? (
-            <span className="w-0" />
-          ) : (
-            <span className="w-0" />
-          )}
+        <div className={`flex items-center border-b p-3 ${isThemeDark ? "border-white/5" : "border-black/10"}`}>
           <button
+            data-slot="sidebar-trigger"
+            data-sidebar="trigger"
             type="button"
             onClick={() => setIsSidebarCollapsed((prev) => !prev)}
-            className={`rounded-md border p-1.5 transition-colors ${
+            className={`inline-flex size-9 shrink-0 items-center justify-center gap-2 rounded-md text-sm whitespace-nowrap transition-all outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 ${
               isThemeDark
-                ? "border-white/10 bg-[#1a1a1a] text-zinc-300 hover:bg-[#242424]"
-                : "border-black/10 bg-white text-zinc-700 shadow-[0_6px_18px_rgba(15,23,42,0.08)] hover:bg-[#f8fafc]"
+                ? "text-zinc-300 hover:bg-white/10 hover:text-zinc-100"
+                : "text-zinc-700 hover:bg-black/5 hover:text-zinc-900"
             }`}
           >
-            {isSidebarCollapsed ? (
-              <ChevronRight className="h-4 w-4" />
-            ) : (
-              <ChevronLeft className="h-4 w-4" />
-            )}
+            <PanelLeft
+              className={`transition-transform duration-300 ${
+                isSidebarCollapsed ? "scale-x-[-1]" : ""
+              } ${isThemeDark ? "text-zinc-300" : "text-zinc-700"}`}
+            />
+            <span className="sr-only">Toggle Sidebar</span>
           </button>
         </div>
 
-        {!isSidebarCollapsed ? (
-          <>
+        <div className="relative min-h-0 flex-1">
+          <div
+            className={`absolute inset-0 flex flex-col transition-[opacity,transform] duration-250 ease-out ${
+              isSidebarCollapsed
+                ? "pointer-events-none translate-x-1 opacity-0"
+                : "translate-x-0 opacity-100"
+            }`}
+          >
             <div className="px-3 pb-3 pt-3">
               <h2
                 className={`mb-2 px-3 text-[11px] font-semibold uppercase tracking-[0.14em] ${
@@ -925,29 +965,31 @@ function WorkflowPageContent() {
               <div className="space-y-2">
                 {filteredPalette.map((item) => {
                   return (
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       key={item.type}
                       type="button"
                       draggable
                       onDragStart={(event) => onDragStart(event, item.type)}
                       onClick={() => addNodeToCanvasCenter(item.type)}
-                      className={`flex w-full cursor-grab items-center gap-2 rounded-md border border-transparent bg-transparent px-3 py-2 text-left text-sm active:cursor-grabbing ${
+                      className={`h-10 w-full cursor-grab justify-start gap-2 rounded-md border border-transparent bg-transparent px-3 text-left text-sm active:cursor-grabbing ${
                         isThemeDark
                           ? "text-zinc-100 hover:bg-white/5"
                           : "text-zinc-700 hover:bg-black/5"
                       }`}
                     >
-                      <span className="inline-flex size-7 items-center justify-center rounded-md bg-white/10 p-1">
+                      <span className="inline-flex size-7 items-center justify-center overflow-hidden rounded-md bg-white/10">
                         <Image
                           src={item.iconPath}
                           alt={`${item.label} icon`}
-                          width={16}
-                          height={16}
-                          className="h-4 w-4 object-contain"
+                          width={26}
+                          height={26}
+                          className="h-[92%] w-[92%] object-cover"
                         />
                       </span>
                       <span>{item.label}</span>
-                    </button>
+                    </Button>
                   );
                 })}
               </div>
@@ -986,34 +1028,43 @@ function WorkflowPageContent() {
                 </div>
               </div>
             </div>
-          </>
-        ) : (
-          <>
+
+          </div>
+
+          <div
+            className={`absolute inset-0 flex flex-col transition-[opacity,transform] duration-250 ease-out ${
+              isSidebarCollapsed
+                ? "translate-x-0 opacity-100"
+                : "pointer-events-none -translate-x-1 opacity-0"
+            }`}
+          >
             <div className="px-2 pt-2">
               <div className="space-y-2">
                 {filteredPalette.map((item) => {
                   return (
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       key={item.type}
                       type="button"
                       title={item.label}
                       draggable
                       onDragStart={(event) => onDragStart(event, item.type)}
                       onClick={() => addNodeToCanvasCenter(item.type)}
-                      className={`flex w-full items-center justify-center rounded-lg p-2 transition-colors ${
+                      className={`h-10 w-full rounded-lg transition-colors ${
                         isThemeDark ? "hover:bg-white/5" : "hover:bg-black/5"
                       }`}
                     >
-                      <span className="inline-flex size-8 items-center justify-center rounded-md bg-white/10 p-1.5">
+                      <span className="inline-flex size-8 items-center justify-center overflow-hidden rounded-md bg-white/10">
                         <Image
                           src={item.iconPath}
                           alt={`${item.label} icon`}
-                          width={18}
-                          height={18}
-                          className="h-[18px] w-[18px] object-contain"
+                          width={30}
+                          height={30}
+                          className="h-[92%] w-[92%] object-cover"
                         />
                       </span>
-                    </button>
+                    </Button>
                   );
                 })}
               </div>
@@ -1029,8 +1080,20 @@ function WorkflowPageContent() {
                 />
               </div>
             </div>
-          </>
-        )}
+          </div>
+        </div>
+
+        {!isSidebarCollapsed ? (
+          <div
+            role="separator"
+            aria-orientation="vertical"
+            title="Drag to resize"
+            onMouseDown={startSidebarResize}
+            className={`absolute right-0 top-0 h-full w-1.5 cursor-col-resize transition-colors ${
+              isThemeDark ? "hover:bg-white/10" : "hover:bg-black/10"
+            }`}
+          />
+        ) : null}
       </aside>
 
       <section className="flex min-w-0 flex-1 flex-col">
@@ -1091,16 +1154,18 @@ function WorkflowPageContent() {
                       className="w-[130px] bg-transparent outline-none"
                     />
                   ) : (
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       type="button"
                       onClick={(event) => {
                         event.stopPropagation();
                         setIsEditingWorkflowName(true);
                       }}
-                      className="truncate"
+                      className="h-7 max-w-[140px] truncate px-2"
                     >
                       {workflowName}
-                    </button>
+                    </Button>
                   )}
                   <ChevronDown className={`h-4 w-4 ${isThemeDark ? "text-zinc-400" : "text-zinc-500"}`} />
                 </div>
@@ -1108,11 +1173,13 @@ function WorkflowPageContent() {
             </div>
 
             <div className="pointer-events-none absolute right-4 top-3 z-20 flex items-center gap-2">
-              <button
+              <Button
+                variant="ghost"
+                size="icon-sm"
                 type="button"
                 onClick={() => setIsThemeDark((prev) => !prev)}
                 title="Toggle theme"
-                className={`pointer-events-auto inline-flex items-center justify-center rounded-lg border p-2 backdrop-blur transition-colors ${
+                className={`pointer-events-auto rounded-lg border backdrop-blur transition-colors ${
                   isThemeDark
                     ? "border-white/10 bg-[#1a1a1a]/90 text-zinc-300 hover:bg-[#252525]"
                     : "border-black/10 bg-white/90 text-zinc-700 shadow-[0_8px_24px_rgba(15,23,42,0.14)] hover:bg-[#f8fafc]"
@@ -1123,7 +1190,7 @@ function WorkflowPageContent() {
                 ) : (
                   <Sun className="h-4 w-4" />
                 )}
-              </button>
+              </Button>
 
               <div
                 className={`pointer-events-auto flex items-center gap-2 rounded-lg border px-3 py-1.5 backdrop-blur ${
@@ -1133,9 +1200,11 @@ function WorkflowPageContent() {
                 }`}
               >
                 <Download className={`h-4 w-4 ${isThemeDark ? "text-zinc-300" : "text-zinc-600"}`} />
-                <button
+                <Button
+                  variant="ghost"
+                  size="xs"
                   type="button"
-                  className={`text-xs ${
+                  className={`h-6 rounded-md px-1.5 text-xs hover:bg-transparent focus-visible:bg-transparent ${
                     isThemeDark
                       ? "text-zinc-200 hover:text-white"
                       : "text-zinc-700 hover:text-zinc-900"
@@ -1143,12 +1212,14 @@ function WorkflowPageContent() {
                   onClick={exportWorkflowJson}
                 >
                   Export JSON
-                </button>
+                </Button>
                 <span className={isThemeDark ? "text-zinc-700" : "text-zinc-400"}>|</span>
                 <Upload className={`h-4 w-4 ${isThemeDark ? "text-zinc-300" : "text-zinc-600"}`} />
-                <button
+                <Button
+                  variant="ghost"
+                  size="xs"
                   type="button"
-                  className={`text-xs ${
+                  className={`h-6 rounded-md px-1.5 text-xs hover:bg-transparent focus-visible:bg-transparent ${
                     isThemeDark
                       ? "text-zinc-200 hover:text-white"
                       : "text-zinc-700 hover:text-zinc-900"
@@ -1156,12 +1227,14 @@ function WorkflowPageContent() {
                   onClick={() => importFileInputRef.current?.click()}
                 >
                   Import JSON
-                </button>
+                </Button>
                 <span className={isThemeDark ? "text-zinc-700" : "text-zinc-400"}>|</span>
                 <Check className={`h-4 w-4 ${isThemeDark ? "text-zinc-300" : "text-zinc-600"}`} />
-                <button
+                <Button
+                  variant="ghost"
+                  size="xs"
                   type="button"
-                  className={`text-xs ${
+                  className={`h-6 rounded-md px-1.5 text-xs hover:bg-transparent focus-visible:bg-transparent ${
                     isThemeDark
                       ? "text-zinc-200 hover:text-white"
                       : "text-zinc-700 hover:text-zinc-900"
@@ -1169,7 +1242,7 @@ function WorkflowPageContent() {
                   onClick={loadSampleWorkflow}
                 >
                   Load Sample
-                </button>
+                </Button>
               </div>
 
               <div
@@ -1180,43 +1253,49 @@ function WorkflowPageContent() {
                 }`}
               >
                 <Save className={`h-4 w-4 ${isThemeDark ? "text-zinc-300" : "text-zinc-600"}`} />
-                <button
+                <Button
+                  variant="ghost"
+                  size="xs"
                   type="button"
                   onClick={() => {
                     void persistWorkflow();
                   }}
                   disabled={isSaving}
-                  className={`text-xs disabled:opacity-60 ${
+                  className={`h-6 rounded-md px-1.5 text-xs hover:bg-transparent focus-visible:bg-transparent disabled:opacity-60 ${
                     isThemeDark
                       ? "text-zinc-200 hover:text-white"
                       : "text-zinc-700 hover:text-zinc-900"
                   }`}
                 >
                   {isSaving ? "Saving..." : "Save"}
-                </button>
+                </Button>
                 <span className={isThemeDark ? "text-zinc-700" : "text-zinc-400"}>|</span>
                 <Send className={`h-4 w-4 ${isThemeDark ? "text-zinc-300" : "text-zinc-600"}`} />
-                <button
+                <Button
+                  variant="ghost"
+                  size="xs"
                   type="button"
                   disabled={isRunning}
                   onClick={() => {
                     void runWorkflow("FULL");
                   }}
-                  className={`text-xs font-medium disabled:opacity-60 ${
+                  className={`h-6 rounded-md px-1.5 text-xs font-medium hover:bg-transparent focus-visible:bg-transparent disabled:opacity-60 ${
                     isThemeDark
                       ? "text-zinc-100 hover:text-white"
                       : "text-zinc-800 hover:text-zinc-900"
                   }`}
                 >
                   {isRunning ? "Running..." : "Run"}
-                </button>
+                </Button>
               </div>
 
-              <button
+              <Button
+                variant="ghost"
+                size="icon-sm"
                 type="button"
                 title="Toggle history"
                 onClick={() => setIsHistoryOpen((prev) => !prev)}
-                className={`pointer-events-auto inline-flex items-center justify-center rounded-lg border p-2 backdrop-blur transition-colors ${
+                className={`pointer-events-auto rounded-lg border backdrop-blur transition-colors ${
                   isThemeDark
                     ? isHistoryOpen
                       ? "border-white/20 bg-white/10 text-white"
@@ -1227,7 +1306,7 @@ function WorkflowPageContent() {
                 }`}
               >
                 <History className="h-4 w-4" />
-              </button>
+              </Button>
             </div>
 
             <ReactFlow
@@ -1286,7 +1365,7 @@ function WorkflowPageContent() {
             {nodes.length === 0 ? (
               <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
                 <div className="-mt-12 text-center">
-                  <p className="text-[16px] font-medium tracking-[-0.01em] text-zinc-300">
+                  <p className={`text-[16px] font-semibold tracking-[-0.01em] ${isThemeDark ? "text-zinc-300" : "text-zinc-700"}`}>
                     Add a node
                   </p>
                   <p className={`mt-2 text-[14px] font-normal ${isThemeDark ? "text-zinc-500" : "text-zinc-600"}`}>
@@ -1314,76 +1393,75 @@ function WorkflowPageContent() {
                 }}
                 onClick={(event) => event.stopPropagation()}
               >
-                <button
+                <Button
+                  variant="ghost"
+                  size="sm"
                   type="button"
-                  className="w-full rounded px-2 py-1.5 text-left text-sm text-zinc-200 hover:bg-white/5"
+                  className="h-8 w-full justify-start rounded px-2 text-left text-sm text-zinc-200 hover:bg-white/5"
                   onClick={() => {
                     void runWorkflow("SINGLE", [contextMenu.nodeId]);
                     setContextMenu(null);
                   }}
                 >
                   Run This Node
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
                   type="button"
-                  className="w-full rounded px-2 py-1.5 text-left text-sm text-red-300 hover:bg-white/5"
+                  className="h-8 w-full justify-start rounded px-2 text-left text-sm text-red-300 hover:bg-white/5"
                   onClick={() => {
                     removeNode(contextMenu.nodeId);
                     setContextMenu(null);
                   }}
                 >
                   Delete
-                </button>
+                </Button>
               </div>
             ) : null}
 
             <div className="pointer-events-none absolute bottom-3 left-3 z-20 flex items-center gap-2">
-              <div
-                className={`pointer-events-auto flex items-center gap-1 rounded-2xl border p-2 backdrop-blur-xl ${
+              <Button
+                variant="ghost"
+                type="button"
+                title="Undo"
+                className={`pointer-events-auto rounded-xl border px-3 py-2 disabled:opacity-50 ${
                   isThemeDark
-                    ? "border-white/10 bg-[#262626]/80"
-                    : "border-black/10 bg-white/85 shadow-[0_8px_24px_rgba(15,23,42,0.14)]"
+                    ? "border-white/10 bg-[#262626]/80 text-zinc-200 hover:bg-[#2a2a2a]"
+                    : "border-black/10 bg-white/85 text-zinc-700 hover:bg-[#eef2f7] shadow-[0_8px_24px_rgba(15,23,42,0.14)]"
+                }`}
+                disabled={!canUndo}
+                onClick={undo}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                type="button"
+                title="Redo"
+                className={`pointer-events-auto rounded-xl border px-3 py-2 disabled:opacity-50 ${
+                  isThemeDark
+                    ? "border-white/10 bg-[#262626]/80 text-zinc-200 hover:bg-[#2a2a2a]"
+                    : "border-black/10 bg-white/85 text-zinc-700 hover:bg-[#eef2f7] shadow-[0_8px_24px_rgba(15,23,42,0.14)]"
+                }`}
+                disabled={!canRedo}
+                onClick={redo}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                type="button"
+                onClick={() => setIsShortcutsOpen(true)}
+                className={`pointer-events-auto inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-xs ${
+                  isThemeDark
+                    ? "border-white/10 bg-[#262626]/80 text-zinc-100 hover:bg-[#2a2a2a]"
+                    : "border-black/10 bg-white/85 text-zinc-700 hover:bg-[#eef2f7] shadow-[0_8px_24px_rgba(15,23,42,0.14)]"
                 }`}
               >
-                <button
-                  type="button"
-                  title="Undo"
-                  className={`rounded-lg p-2 disabled:opacity-50 ${
-                    isThemeDark
-                      ? "bg-[#1a1919]/70 text-zinc-200 hover:bg-[#2a2a2a]"
-                      : "bg-[#f8fafc] text-zinc-700 hover:bg-[#eef2f7]"
-                  }`}
-                  disabled={!canUndo}
-                  onClick={undo}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </button>
-                <button
-                  type="button"
-                  title="Redo"
-                  className={`rounded-lg p-2 disabled:opacity-50 ${
-                    isThemeDark
-                      ? "bg-[#1a1919]/70 text-zinc-200 hover:bg-[#2a2a2a]"
-                      : "bg-[#f8fafc] text-zinc-700 hover:bg-[#eef2f7]"
-                  }`}
-                  disabled={!canRedo}
-                  onClick={redo}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setIsShortcutsOpen(true)}
-                  className={`ml-1 inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs ${
-                    isThemeDark
-                      ? "bg-[#1a1919]/70 text-zinc-100 hover:bg-[#2a2a2a]"
-                      : "bg-[#f8fafc] text-zinc-700 hover:bg-[#eef2f7]"
-                  }`}
-                >
-                  <Keyboard className="h-4 w-4" />
-                  Keyboard shortcuts
-                </button>
-              </div>
+                <Keyboard className="h-4 w-4" />
+                Keyboard shortcuts
+              </Button>
             </div>
 
             <div className="pointer-events-none absolute bottom-3 left-1/2 z-20 -translate-x-1/2">
@@ -1394,7 +1472,7 @@ function WorkflowPageContent() {
                     : "border-black/10 bg-white/85 shadow-[0_8px_24px_rgba(15,23,42,0.14)]"
                 }`}
               >
-                <button
+                <Button variant="ghost"
                   type="button"
                   title="New node"
                   className={`rounded-lg p-2 ${
@@ -1405,8 +1483,8 @@ function WorkflowPageContent() {
                   onClick={() => addNodeToCanvasCenter("text")}
                 >
                   <Plus className="h-5 w-5" />
-                </button>
-                <button
+                </Button>
+                <Button variant="ghost"
                   type="button"
                   title="Draw selections"
                   className={`rounded-lg p-2 hover:bg-white/10 ${
@@ -1423,8 +1501,8 @@ function WorkflowPageContent() {
                   }}
                 >
                   <Circle className="h-5 w-5" />
-                </button>
-                <button
+                </Button>
+                <Button variant="ghost"
                   type="button"
                   title="Pan"
                   onClick={() => setIsPanMode((prev) => !prev)}
@@ -1439,8 +1517,8 @@ function WorkflowPageContent() {
                   }`}
                 >
                   <Hand className="h-5 w-5" />
-                </button>
-                <button
+                </Button>
+                <Button variant="ghost"
                   type="button"
                   title="Cut connections"
                   className={`rounded-lg p-2 ${
@@ -1451,8 +1529,8 @@ function WorkflowPageContent() {
                   onClick={cutSelectedConnections}
                 >
                   <Scissors className="h-5 w-5" />
-                </button>
-                <button
+                </Button>
+                <Button variant="ghost"
                   type="button"
                   title="Presets"
                   className={`rounded-lg p-2 ${
@@ -1463,7 +1541,7 @@ function WorkflowPageContent() {
                   onClick={loadSampleWorkflow}
                 >
                   <Sparkles className="h-5 w-5" />
-                </button>
+                </Button>
               </div>
             </div>
           </div>
@@ -1490,6 +1568,7 @@ function WorkflowPageContent() {
               <WorkflowHistory
                 runs={workflowRunHistory}
                 isLoading={historyLoading}
+                isThemeDark={isThemeDark}
                 onRefresh={() => {
                   if (!workflowId) {
                     return;
@@ -1507,7 +1586,7 @@ function WorkflowPageContent() {
                 }`}
               >
                 {selectedNodes.length > 0 ? (
-                  <button
+                  <Button variant="ghost"
                     type="button"
                     onClick={() => {
                       void runWorkflow("PARTIAL", selectedNodes);
@@ -1519,7 +1598,7 @@ function WorkflowPageContent() {
                     }`}
                   >
                     Run Selected ({selectedNodes.length})
-                  </button>
+                  </Button>
                 ) : (
                   <span>Select nodes to enable partial run.</span>
                 )}
@@ -1543,13 +1622,13 @@ function WorkflowPageContent() {
                       Quickly navigate and create with these shortcuts.
                     </p>
                   </div>
-                  <button
+                  <Button variant="ghost"
                     type="button"
                     onClick={() => setIsShortcutsOpen(false)}
                     className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-[#171717] text-zinc-300 hover:bg-[#242424]"
                   >
                     <span className="text-lg leading-none">×</span>
-                  </button>
+                  </Button>
                 </div>
 
                 <div className="space-y-2">
