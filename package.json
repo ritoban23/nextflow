@@ -24,7 +24,7 @@
     "@radix-ui/react-dialog": "^1.1.15",
     "@trigger.dev/sdk": "^4.4.3",
     "@uppy/core": "^5.2.0",
-    "@uppy/transloadit": "^5.5.0",
+    "@uppy/transloadit": "^5.5.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "dotenv": "^17.3.1",
