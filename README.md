@@ -69,6 +69,8 @@ See SECURITY.md for vulnerability reporting and response expectations.
 
 1. Contribution process and expectations: CONTRIBUTING.md
 2. Community conduct: CODE_OF_CONDUCT.md
+3. Architecture overview: docs/ARCHITECTURE.md
+4. Release and rollout playbook: docs/RELEASE_PROCESS.md
 
 ## Contributing
 
