@@ -65,6 +65,11 @@ npm run format
 
 See SECURITY.md for vulnerability reporting and response expectations.
 
+## Governance
+
+1. Contribution process and expectations: CONTRIBUTING.md
+2. Community conduct: CODE_OF_CONDUCT.md
+
 ## Contributing
 
 1. Keep functional workflow logic unchanged unless explicitly requested.
