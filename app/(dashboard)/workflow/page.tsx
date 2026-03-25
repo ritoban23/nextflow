@@ -26,6 +26,7 @@ import type {
   ChangeEvent,
   DragEvent,
   MouseEvent as ReactMouseEvent,
+  ReactNode,
 } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -69,6 +70,11 @@ type WorkflowNodeType =
   | "llm"
   | "cropImage"
   | "extractFrame";
+
+type FlowPoint = {
+  x: number;
+  y: number;
+};
 
 function getNodeDefaultData(nodeType: string) {
   if (nodeType === "text") {
@@ -386,6 +392,88 @@ function isConnectionValid(connection: Connection, nodes: Node[]) {
   return false;
 }
 
+function getNodeCenter(node: Node): FlowPoint {
+  const baseX = node.positionAbsolute?.x ?? node.position.x;
+  const baseY = node.positionAbsolute?.y ?? node.position.y;
+  const width = node.width ?? 180;
+  const height = node.height ?? 72;
+
+  return {
+    x: baseX + width / 2,
+    y: baseY + height / 2,
+  };
+}
+
+function pointOnSegment(a: FlowPoint, b: FlowPoint, p: FlowPoint) {
+  return (
+    p.x <= Math.max(a.x, b.x) + 0.0001 &&
+    p.x >= Math.min(a.x, b.x) - 0.0001 &&
+    p.y <= Math.max(a.y, b.y) + 0.0001 &&
+    p.y >= Math.min(a.y, b.y) - 0.0001
+  );
+}
+
+function orientation(a: FlowPoint, b: FlowPoint, c: FlowPoint) {
+  const value = (b.y - a.y) * (c.x - b.x) - (b.x - a.x) * (c.y - b.y);
+
+  if (Math.abs(value) < 0.0001) {
+    return 0;
+  }
+
+  return value > 0 ? 1 : 2;
+}
+
+function segmentsIntersect(
+  a1: FlowPoint,
+  a2: FlowPoint,
+  b1: FlowPoint,
+  b2: FlowPoint,
+) {
+  const o1 = orientation(a1, a2, b1);
+  const o2 = orientation(a1, a2, b2);
+  const o3 = orientation(b1, b2, a1);
+  const o4 = orientation(b1, b2, a2);
+
+  if (o1 !== o2 && o3 !== o4) {
+    return true;
+  }
+
+  if (o1 === 0 && pointOnSegment(a1, a2, b1)) {
+    return true;
+  }
+
+  if (o2 === 0 && pointOnSegment(a1, a2, b2)) {
+    return true;
+  }
+
+  if (o3 === 0 && pointOnSegment(b1, b2, a1)) {
+    return true;
+  }
+
+  if (o4 === 0 && pointOnSegment(b1, b2, a2)) {
+    return true;
+  }
+
+  return false;
+}
+
+function FloatingToolButton({
+  label,
+  children,
+}: {
+  label: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="group pointer-events-auto relative flex items-center justify-center">
+      {children}
+      <span className="pointer-events-none absolute -top-9 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md border border-white/10 bg-black/90 px-2 py-1 text-[11px] text-zinc-200 opacity-0 transition-opacity duration-150 group-hover:opacity-100">
+        {label}
+      </span>
+    </div>
+  );
+}
+
 const NODE_PALETTE: NodePaletteItem[] = [
   { type: "text", label: "Text", iconPath: "/text2.png" },
   { type: "uploadImage", label: "Upload Image", iconPath: "/imageV4.png" },
@@ -424,7 +512,12 @@ function WorkflowPageContent() {
   const [isEditingWorkflowName, setIsEditingWorkflowName] = useState(false);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
   const [isDrawSelectionMode, setIsDrawSelectionMode] = useState(false);
-  const [isPanMode, setIsPanMode] = useState(true);
+  const [isPanMode, setIsPanMode] = useState(false);
+  const [isCutMode, setIsCutMode] = useState(false);
+  const [isCuttingConnection, setIsCuttingConnection] = useState(false);
+  const [cutStart, setCutStart] = useState<FlowPoint | null>(null);
+  const [cutStartCanvas, setCutStartCanvas] = useState<FlowPoint | null>(null);
+  const [cutEndCanvas, setCutEndCanvas] = useState<FlowPoint | null>(null);
   const [contextMenu, setContextMenu] = useState<{
     nodeId: string;
     x: number;
@@ -637,19 +730,136 @@ function WorkflowPageContent() {
     }
   }, [removeNode]);
 
-  const cutSelectedConnections = useCallback(() => {
-    const selectedSet = new Set(selectedNodesRef.current);
-    if (selectedSet.size === 0) {
-      return;
-    }
+  const endCutMode = useCallback(() => {
+    setIsCuttingConnection(false);
+    setCutStart(null);
+    setCutStartCanvas(null);
+    setCutEndCanvas(null);
+    setIsCutMode(false);
+  }, []);
 
-    setEdges(
-      edges.filter(
-        (edge) =>
-          !selectedSet.has(edge.source) && !selectedSet.has(edge.target),
-      ),
-    );
-  }, [edges, setEdges]);
+  const beginCutMode = useCallback(() => {
+    setIsDrawSelectionMode(false);
+    setIsPanMode(false);
+    setIsCutMode((current) => {
+      if (current) {
+        setIsCuttingConnection(false);
+        setCutStart(null);
+        setCutStartCanvas(null);
+        setCutEndCanvas(null);
+        setIsPanMode(true);
+      }
+
+      return !current;
+    });
+  }, []);
+
+  const onCutStart = useCallback(
+    (event: ReactMouseEvent<HTMLDivElement>) => {
+      if (!isCutMode || !reactFlowInstance || !wrapperRef.current || event.button !== 0) {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+
+      const point = reactFlowInstance.screenToFlowPosition({
+        x: event.clientX,
+        y: event.clientY,
+      });
+      const bounds = wrapperRef.current.getBoundingClientRect();
+      const canvasPoint = {
+        x: event.clientX - bounds.left,
+        y: event.clientY - bounds.top,
+      };
+
+      setCutStart(point);
+      setCutStartCanvas(canvasPoint);
+      setCutEndCanvas(canvasPoint);
+      setIsCuttingConnection(true);
+    },
+    [isCutMode, reactFlowInstance],
+  );
+
+  const onCutMove = useCallback(
+    (event: ReactMouseEvent<HTMLDivElement>) => {
+      if (
+        !isCutMode ||
+        !isCuttingConnection ||
+        !reactFlowInstance ||
+        !wrapperRef.current
+      ) {
+        return;
+      }
+
+      const bounds = wrapperRef.current.getBoundingClientRect();
+
+      setCutEndCanvas({
+        x: event.clientX - bounds.left,
+        y: event.clientY - bounds.top,
+      });
+    },
+    [isCutMode, isCuttingConnection, reactFlowInstance],
+  );
+
+  const onCutEnd = useCallback(
+    (event: ReactMouseEvent<HTMLDivElement>) => {
+      if (
+        !isCutMode ||
+        !isCuttingConnection ||
+        !reactFlowInstance ||
+        !cutStart ||
+        !wrapperRef.current
+      ) {
+        return;
+      }
+
+      const endPoint = reactFlowInstance.screenToFlowPosition({
+        x: event.clientX,
+        y: event.clientY,
+      });
+      const bounds = wrapperRef.current.getBoundingClientRect();
+      setCutEndCanvas({
+        x: event.clientX - bounds.left,
+        y: event.clientY - bounds.top,
+      });
+
+      const nodesById = new Map(nodes.map((node) => [node.id, node]));
+      const removedEdgeIds = new Set<string>();
+
+      for (const edge of edges) {
+        const sourceNode = nodesById.get(edge.source);
+        const targetNode = nodesById.get(edge.target);
+
+        if (!sourceNode || !targetNode) {
+          continue;
+        }
+
+        const sourceCenter = getNodeCenter(sourceNode);
+        const targetCenter = getNodeCenter(targetNode);
+
+        if (segmentsIntersect(cutStart, endPoint, sourceCenter, targetCenter)) {
+          removedEdgeIds.add(edge.id);
+        }
+      }
+
+      if (removedEdgeIds.size > 0) {
+        setEdges(edges.filter((edge) => !removedEdgeIds.has(edge.id)));
+      }
+
+      endCutMode();
+    },
+    [
+      cutStart,
+      edges,
+      endCutMode,
+      isCutMode,
+      isCuttingConnection,
+      nodes,
+      reactFlowInstance,
+      setEdges,
+    ],
+  );
 
   const loadSampleWorkflow = useCallback(() => {
     const sample = buildSampleWorkflow();
@@ -1199,9 +1409,15 @@ function WorkflowPageContent() {
             className={`relative h-full w-full min-w-0 flex-1 ${canvasThemeClass}`}
             style={{
               backgroundImage: canvasBackground,
+              cursor: isCutMode
+                ? "url('/scissor-cursor.svg') 8 8, crosshair"
+                : undefined,
             }}
             onDrop={onDrop}
             onDragOver={onDragOver}
+            onMouseDown={onCutStart}
+            onMouseMove={onCutMove}
+            onMouseUp={onCutEnd}
             onClick={() => {
               setContextMenu(null);
               setIsEditingWorkflowName(false);
@@ -1486,6 +1702,21 @@ function WorkflowPageContent() {
               />
             </ReactFlow>
 
+            {isCutMode && cutStartCanvas && cutEndCanvas ? (
+              <svg className="pointer-events-none absolute inset-0 z-20 h-full w-full">
+                <line
+                  x1={cutStartCanvas.x}
+                  y1={cutStartCanvas.y}
+                  x2={cutEndCanvas.x}
+                  y2={cutEndCanvas.y}
+                  stroke={isThemeDark ? "#fb7185" : "#ef4444"}
+                  strokeWidth={3}
+                  strokeLinecap="round"
+                  strokeDasharray="7 5"
+                />
+              </svg>
+            ) : null}
+
             {nodes.length === 0 ? (
               <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
                 <div className="-mt-12 text-center">
@@ -1600,81 +1831,114 @@ function WorkflowPageContent() {
                     : "border-black/10 bg-white/85 shadow-[0_8px_24px_rgba(15,23,42,0.14)]"
                 }`}
               >
-                <Button
-                  variant="ghost"
-                  type="button"
-                  title="New node"
-                  className={`rounded-lg p-2 ${
-                    isThemeDark
-                      ? "text-zinc-300 hover:bg-white/10"
-                      : "text-zinc-700 hover:bg-black/5"
-                  }`}
-                  onClick={() => addNodeToCanvasCenter("text")}
-                >
-                  <Plus className="h-5 w-5" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  type="button"
-                  title="Draw selections"
-                  className={`rounded-lg p-2 hover:bg-white/10 ${
-                    isDrawSelectionMode
-                      ? isThemeDark
-                        ? "bg-white/10 text-zinc-100"
-                        : "bg-black/5 text-zinc-900"
-                      : isThemeDark
-                        ? "text-zinc-300"
+                <FloatingToolButton label="New Node">
+                  <Button
+                    variant="ghost"
+                    type="button"
+                    className={`rounded-lg p-2 ${
+                      isThemeDark
+                        ? "text-zinc-300 hover:bg-zinc-700/40"
                         : "text-zinc-700 hover:bg-black/5"
-                  }`}
-                  onClick={() => {
-                    setIsDrawSelectionMode((prev) => !prev);
-                  }}
-                >
-                  <Circle className="h-5 w-5" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  type="button"
-                  title="Pan"
-                  onClick={() => setIsPanMode((prev) => !prev)}
-                  className={`rounded-lg p-2 ${
-                    isPanMode
-                      ? isThemeDark
-                        ? "bg-white/10 text-zinc-100"
-                        : "bg-black/5 text-zinc-900"
-                      : isThemeDark
-                        ? "text-zinc-300 hover:bg-white/10"
+                    }`}
+                    onClick={() => addNodeToCanvasCenter("text")}
+                  >
+                    <Plus className="h-5 w-5" />
+                  </Button>
+                </FloatingToolButton>
+
+                <FloatingToolButton label="Draw Selection">
+                  <Button
+                    variant="ghost"
+                    type="button"
+                    className={`rounded-lg p-2 ${
+                      isDrawSelectionMode
+                        ? isThemeDark
+                          ? "bg-zinc-700/60 text-zinc-100"
+                          : "bg-black/5 text-zinc-900"
+                        : isThemeDark
+                          ? "text-zinc-300 hover:bg-zinc-700/40"
+                          : "text-zinc-700 hover:bg-black/5"
+                    }`}
+                    onClick={() => {
+                      setIsDrawSelectionMode((prev) => {
+                        const next = !prev;
+
+                        if (next) {
+                          setIsPanMode(false);
+                          endCutMode();
+                        }
+
+                        return next;
+                      });
+                    }}
+                  >
+                    <Circle className="h-5 w-5" />
+                  </Button>
+                </FloatingToolButton>
+
+                <FloatingToolButton label="Pan Canvas">
+                  <Button
+                    variant="ghost"
+                    type="button"
+                    onClick={() => {
+                      setIsPanMode((prev) => {
+                        const next = !prev;
+
+                        if (next) {
+                          setIsDrawSelectionMode(false);
+                          endCutMode();
+                        }
+
+                        return next;
+                      });
+                    }}
+                    className={`rounded-lg p-2 ${
+                      isPanMode
+                        ? isThemeDark
+                          ? "bg-zinc-700/60 text-zinc-100"
+                          : "bg-black/5 text-zinc-900"
+                        : isThemeDark
+                          ? "text-zinc-300 hover:bg-zinc-700/40"
+                          : "text-zinc-700 hover:bg-black/5"
+                    }`}
+                  >
+                    <Hand className="h-5 w-5" />
+                  </Button>
+                </FloatingToolButton>
+
+                <FloatingToolButton label="Cut Connections">
+                  <Button
+                    variant="ghost"
+                    type="button"
+                    className={`rounded-lg p-2 ${
+                      isCutMode
+                        ? isThemeDark
+                          ? "bg-zinc-700/60 text-zinc-100"
+                          : "bg-black/5 text-zinc-900"
+                        : isThemeDark
+                          ? "text-zinc-300 hover:bg-zinc-700/40"
+                          : "text-zinc-700 hover:bg-black/5"
+                    }`}
+                    onClick={beginCutMode}
+                  >
+                    <Scissors className="h-5 w-5" />
+                  </Button>
+                </FloatingToolButton>
+
+                <FloatingToolButton label="Load Preset">
+                  <Button
+                    variant="ghost"
+                    type="button"
+                    className={`rounded-lg p-2 ${
+                      isThemeDark
+                        ? "text-zinc-300 hover:bg-zinc-700/40"
                         : "text-zinc-700 hover:bg-black/5"
-                  }`}
-                >
-                  <Hand className="h-5 w-5" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  type="button"
-                  title="Cut connections"
-                  className={`rounded-lg p-2 ${
-                    isThemeDark
-                      ? "text-zinc-300 hover:bg-white/10"
-                      : "text-zinc-700 hover:bg-black/5"
-                  }`}
-                  onClick={cutSelectedConnections}
-                >
-                  <Scissors className="h-5 w-5" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  type="button"
-                  title="Presets"
-                  className={`rounded-lg p-2 ${
-                    isThemeDark
-                      ? "text-zinc-300 hover:bg-white/10"
-                      : "text-zinc-700 hover:bg-black/5"
-                  }`}
-                  onClick={loadSampleWorkflow}
-                >
-                  <Sparkles className="h-5 w-5" />
-                </Button>
+                    }`}
+                    onClick={loadSampleWorkflow}
+                  >
+                    <Sparkles className="h-5 w-5" />
+                  </Button>
+                </FloatingToolButton>
               </div>
             </div>
           </div>

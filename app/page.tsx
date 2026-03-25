@@ -444,7 +444,12 @@ export default function Home() {
               <a href="#" className="transition-colors hover:text-white">
                 Twitter
               </a>
-              <a href="#" className="transition-colors hover:text-white">
+              <a
+                href="https://www.linkedin.com/in/ritoban-dutta/"
+                target="_blank"
+                rel="noreferrer"
+                className="transition-colors hover:text-white"
+              >
                 LinkedIn
               </a>
             </div>

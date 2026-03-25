@@ -1,5 +1,7 @@
 # NextFlow
 
+![NextFlow Logo](public/nextflow.png)
+
 NextFlow is a visual workflow builder focused on LLM and media-assisted automation.
 It is built around a canvas-style editor with typed node connections, execution
 history, and authenticated user-scoped persistence.

@@ -1,12 +1,14 @@
-import { SignIn } from "@clerk/nextjs";
+import { SignUp } from "@clerk/nextjs";
 
-export default function SignInPage() {
+export default function SignUpPage() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-black p-6">
-      <SignIn
+      <SignUp
+        routing="path"
+        path="/sign-up"
         forceRedirectUrl="/workflow"
         fallbackRedirectUrl="/workflow"
-        signUpUrl="/sign-up"
+        signInUrl="/sign-in"
       />
     </main>
   );
