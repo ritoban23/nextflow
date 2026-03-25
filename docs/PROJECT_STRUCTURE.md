@@ -10,6 +10,7 @@
 - `generated/`: Generated client artifacts (not hand-edited)
 - `public/`: Static assets
 - `docs/`: Architecture, release process, and standards docs
+- `packages/`: Incrementally extracted internal packages
 - `.github/`: CI workflows, templates, and repository automation config
 
 ## Key Runtime Paths
@@ -19,6 +20,7 @@
 - Run APIs: `app/api/runs/**`
 - Workflow APIs: `app/api/workflows/**`
 - Trigger tasks: `src/trigger/tasks.ts`
+- Workflow execution core package: `packages/workflow-core/src/executeWorkflow.ts`
 
 ## Conventions
 

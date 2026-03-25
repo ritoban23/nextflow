@@ -73,6 +73,7 @@ See SECURITY.md for vulnerability reporting and response expectations.
 3. Architecture overview: docs/ARCHITECTURE.md
 4. Release and rollout playbook: docs/RELEASE_PROCESS.md
 5. Project structure map: docs/PROJECT_STRUCTURE.md
+6. Internal package extraction pattern: packages/workflow-core
 
 ## Contributing
 
