@@ -467,7 +467,7 @@ function FloatingToolButton({
   return (
     <div className="group pointer-events-auto relative flex items-center justify-center">
       {children}
-      <span className="pointer-events-none absolute -top-9 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md border border-white/10 bg-black/90 px-2 py-1 text-[11px] text-zinc-200 opacity-0 transition-opacity duration-150 group-hover:opacity-100">
+      <span className="pointer-events-none absolute -top-9 left-1/2 -translate-x-1/2 rounded-md border border-white/10 bg-black/90 px-2 py-1 text-[11px] whitespace-nowrap text-zinc-200 opacity-0 transition-opacity duration-150 group-hover:opacity-100">
         {label}
       </span>
     </div>
@@ -756,7 +756,12 @@ function WorkflowPageContent() {
 
   const onCutStart = useCallback(
     (event: ReactMouseEvent<HTMLDivElement>) => {
-      if (!isCutMode || !reactFlowInstance || !wrapperRef.current || event.button !== 0) {
+      if (
+        !isCutMode ||
+        !reactFlowInstance ||
+        !wrapperRef.current ||
+        event.button !== 0
+      ) {
         return;
       }
 

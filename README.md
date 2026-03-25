@@ -53,6 +53,7 @@ npm run lint
 npm run typecheck
 npm run prettier-check
 npm run format
+npm run check
 ```
 
 ## CI Standards in This Repo
@@ -64,6 +65,14 @@ npm run format
 ## Security
 
 See SECURITY.md for vulnerability reporting and response expectations.
+
+## Governance
+
+1. Contribution process and expectations: CONTRIBUTING.md
+2. Community conduct: CODE_OF_CONDUCT.md
+3. Architecture overview: docs/ARCHITECTURE.md
+4. Release and rollout playbook: docs/RELEASE_PROCESS.md
+5. Project structure map: docs/PROJECT_STRUCTURE.md
 
 ## Contributing
 
