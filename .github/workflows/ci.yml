@@ -31,11 +31,5 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Lint
-        run: npm run lint
-
-      - name: Typecheck
-        run: npm run typecheck
-
-      - name: Format check
-        run: npm run prettier-check
+      - name: Quality checks
+        run: npm run check

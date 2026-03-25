@@ -3,12 +3,16 @@
   "version": "0.1.0",
   "private": true,
   "packageManager": "npm@10.8.2",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint app components lib src next.config.ts prisma.config.ts trigger.config.ts proxy.ts",
     "typecheck": "tsc --noEmit",
+    "check": "npm run lint && npm run typecheck && npm run prettier-check",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,css}\"",
     "prettier-check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,css}\""
   },
